@@ -1,4 +1,3 @@
-// app/login/page.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -20,7 +19,8 @@ export default function LoginPage() {
     setErrorMsg("");
 
     try {
-      const res = await fetch(`${window.location.origin}/api/auth/login`, {
+      // ❗ FIXED: use relative URL only
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         credentials: "include",
         headers: {

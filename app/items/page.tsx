@@ -19,7 +19,6 @@ export default function ItemsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Item | null>(null);
 
-  // form fields
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
@@ -111,9 +110,15 @@ export default function ItemsPage() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold">Items</h2>
+
+        {/* ACCENT BUTTON */}
         <button
           onClick={() => openModal()}
-          className="bg-fuchsia-600 hover:bg-fuchsia-500 px-4 py-2 rounded-lg font-medium"
+          className="
+            px-4 py-2 rounded-lg font-medium
+            bg-[color:var(--accent)]
+            hover:bg-[color:var(--accent-hover)]
+          "
         >
           + Add Item
         </button>
@@ -161,6 +166,7 @@ export default function ItemsPage() {
                   >
                     Edit
                   </button>
+
                   <button
                     onClick={() => deleteItem(i.id)}
                     className="text-red-400 hover:text-red-300"
@@ -193,7 +199,6 @@ export default function ItemsPage() {
               {editing ? "Edit Item" : "Add Item"}
             </h2>
 
-            {/* FORM */}
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Name</label>
@@ -206,7 +211,9 @@ export default function ItemsPage() {
 
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="block text-sm text-slate-300 mb-1">Price</label>
+                  <label className="block text-sm text-slate-300 mb-1">
+                    Price
+                  </label>
                   <input
                     type="number"
                     className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
@@ -216,7 +223,9 @@ export default function ItemsPage() {
                 </div>
 
                 <div className="flex-1">
-                  <label className="block text-sm text-slate-300 mb-1">Stock</label>
+                  <label className="block text-sm text-slate-300 mb-1">
+                    Stock
+                  </label>
                   <input
                     type="number"
                     className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
@@ -227,7 +236,9 @@ export default function ItemsPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-slate-300 mb-1">Category</label>
+                <label className="block text-sm text-slate-300 mb-1">
+                  Category
+                </label>
                 <input
                   className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
                   value={category}
@@ -236,7 +247,9 @@ export default function ItemsPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-slate-300 mb-1">Barcode</label>
+                <label className="block text-sm text-slate-300 mb-1">
+                  Barcode
+                </label>
                 <input
                   className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
                   value={barcode}
@@ -245,7 +258,6 @@ export default function ItemsPage() {
               </div>
             </div>
 
-            {/* ACTION BUTTONS */}
             <div className="mt-6 flex justify-between">
               <button
                 onClick={() => setShowModal(false)}

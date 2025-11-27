@@ -1,8 +1,9 @@
-//  app/customers/page.tsx
+// app/customers/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
 import EditCustomerModal from "./components/EditCustomerModal";
+import BlacklistModal from "./components/BlacklistModal";
 
 type Customer = {
   id: number;
@@ -10,6 +11,10 @@ type Customer = {
   phone: string;
   email: string | null;
   discount_id: number | null;
+  is_blacklisted: boolean;
+  blacklist_start: string | null;
+  blacklist_end: string | null;
+  blacklist_reason: string | null;
 };
 
 type Discount = {
@@ -26,6 +31,10 @@ export default function CustomersPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+
+  const [blacklistModal, setBlacklistModal] = useState(false);
+  const [blacklistCustomer, setBlacklistCustomer] =
+    useState<Customer | null>(null);
 
   // -------------------------------------------------------
   // LOAD CUSTOMERS
@@ -51,124 +60,114 @@ export default function CustomersPage() {
   }, []);
 
   // -------------------------------------------------------
-  // OPEN MODAL
-  // -------------------------------------------------------
-  const openModal = (customer?: Customer) => {
-    setEditingCustomer(customer || null);
-    setShowModal(true);
-  };
-
-  // -------------------------------------------------------
-  // DELETE CUSTOMER
-  // -------------------------------------------------------
-  const deleteCustomer = async (id: number) => {
-    if (!confirm("Delete this customer?")) return;
-
-    const res = await fetch(`/api/customers?id=${id}`, {
-      method: "DELETE",
-    });
-
-    const json = await res.json();
-    if (!res.ok || json.error) {
-      alert("Failed to delete customer.");
-      return;
-    }
-
-    loadCustomers();
-  };
-
-  // -------------------------------------------------------
-  // FILTER SEARCH RESULTS (name, phone, DISCOUNT)
+  // FILTERED LIST
   // -------------------------------------------------------
   const filtered = customers.filter((c) => {
     if (!search.trim()) return true;
 
-    const term = search.toLowerCase();
-    const termNoPercent = term.replace("%", "");
-
-    const matchesName = c.name.toLowerCase().includes(term);
+    const t = search.toLowerCase();
+    const matchesName = c.name.toLowerCase().includes(t);
     const matchesPhone = (c.phone || "").includes(search);
 
-    const discount = discounts.find((d) => d.id === c.discount_id);
-    const matchesDiscount = discount
-      ? discount.name.toLowerCase().includes(term) ||
-        String(discount.percent).includes(termNoPercent)
-      : false;
-
-    return matchesName || matchesPhone || matchesDiscount;
+    return matchesName || matchesPhone;
   });
 
   // -------------------------------------------------------
-  // RENDER PAGE
+  // RENDER
   // -------------------------------------------------------
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 pt-24 px-8">
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between mb-6">
         <h2 className="text-3xl font-bold">Customers</h2>
+
+        {/* ACCENT BUTTON */}
         <button
-          onClick={() => openModal()}
-          className="bg-fuchsia-600 hover:bg-fuchsia-500 px-4 py-2 rounded-lg font-medium"
+          onClick={() => {
+            setEditingCustomer(null);
+            setShowModal(true);
+          }}
+          className="
+            px-4 py-2 rounded-lg
+            bg-[color:var(--accent)]
+            hover:bg-[color:var(--accent-hover)]
+          "
         >
           + Add Customer
         </button>
       </div>
 
-      {/* SEARCH */}
       <input
         type="text"
-        placeholder="Search by name, phone, or discount..."
-        className="w-full p-3 mb-6 bg-slate-900 border border-slate-700 rounded-lg"
+        className="w-full mb-6 p-3 bg-slate-900 border border-slate-700 rounded"
+        placeholder="Search..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {/* TABLE */}
-      <div className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+      <div className="bg-slate-900 border border-slate-700 rounded overflow-hidden">
         <table className="w-full">
           <thead className="bg-slate-800 border-b border-slate-700">
             <tr>
               <th className="p-3 text-left">Name</th>
               <th className="p-3 text-left">Phone</th>
               <th className="p-3 text-left">Email</th>
-              <th className="p-3 text-left">Discount</th>
+              <th className="p-3 text-left">Status</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {filtered.map((c) => {
-              const discount = discounts.find((d) => d.id === c.discount_id);
+            {filtered.map((c) => (
+              <tr key={c.id} className="border-b border-slate-800">
+                <td className="p-3">{c.name}</td>
+                <td className="p-3">{c.phone}</td>
+                <td className="p-3">{c.email || "-"}</td>
 
-              return (
-                <tr
-                  key={c.id}
-                  className="border-b border-slate-800 hover:bg-slate-800"
-                >
-                  <td className="p-3">{c.name}</td>
-                  <td className="p-3">{c.phone}</td>
-                  <td className="p-3">{c.email || "-"}</td>
-                  <td className="p-3">
-                    {discount ? `${discount.name} (${discount.percent}%)` : "-"}
-                  </td>
+                <td className="p-3">
+                  {c.is_blacklisted ? (
+                    <span className="text-red-400 font-bold">BLACKLISTED</span>
+                  ) : (
+                    "-"
+                  )}
+                </td>
 
-                  <td className="p-3 text-right">
-                    <button
-                      onClick={() => openModal(c)}
-                      className="text-amber-400 hover:text-amber-300 mr-4"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteCustomer(c.id)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+                <td className="p-3 text-right">
+                  <button
+                    onClick={() => {
+                      setEditingCustomer(c);
+                      setShowModal(true);
+                    }}
+                    className="text-amber-400 hover:text-amber-300 mr-4"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setBlacklistCustomer(c);
+                      setBlacklistModal(true);
+                    }}
+                    className="text-red-400 hover:text-red-300 mr-4"
+                  >
+                    Blacklist
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      if (!confirm("Delete this customer?")) return;
+
+                      await fetch(`/api/customers?id=${c.id}`, {
+                        method: "DELETE",
+                      });
+                      loadCustomers();
+                    }}
+                    className="text-red-500 hover:text-red-400"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
 
             {filtered.length === 0 && (
               <tr>
@@ -184,12 +183,21 @@ export default function CustomersPage() {
         </table>
       </div>
 
-      {/* MODAL */}
+      {/* EDIT MODAL */}
       {showModal && (
         <EditCustomerModal
           customer={editingCustomer}
           onClose={() => setShowModal(false)}
-          onSaved={() => loadCustomers()}
+          onSaved={loadCustomers}
+        />
+      )}
+
+      {/* BLACKLIST MODAL */}
+      {blacklistModal && blacklistCustomer && (
+        <BlacklistModal
+          customer={blacklistCustomer}
+          onClose={() => setBlacklistModal(false)}
+          onSaved={loadCustomers}
         />
       )}
     </div>

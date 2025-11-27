@@ -1,3 +1,4 @@
+// app/pos/components/AddCustomerModal.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,7 +7,13 @@ type Customer = {
   id: number;
   name: string;
   phone: string | null;
+  email: string | null;
   discount_id: number | null;
+
+  is_blacklisted: boolean;
+  blacklist_reason: string | null;
+  blacklist_start: string | null;
+  blacklist_end: string | null;
 };
 
 type Discount = {
@@ -31,9 +38,9 @@ export default function AddCustomerModal({
   const [newDiscountId, setNewDiscountId] = useState<number | null>(null);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
 
-  // ---------------------------------------------------
-  // Load all discounts (for creating new customer)
-  // ---------------------------------------------------
+  // ---------------------------------------------
+  // Load all discounts
+  // ---------------------------------------------
   const loadDiscounts = async () => {
     const res = await fetch("/api/discounts");
     const json = await res.json();
@@ -44,9 +51,9 @@ export default function AddCustomerModal({
     loadDiscounts();
   }, []);
 
-  // ---------------------------------------------------
-  // Search Customers (uses /api/customers/search)
-  // ---------------------------------------------------
+  // ---------------------------------------------
+  // Search Customers (returns blacklist fields now)
+  // ---------------------------------------------
   const searchCustomers = async () => {
     if (!search.trim()) {
       setResults([]);
@@ -54,10 +61,7 @@ export default function AddCustomerModal({
     }
 
     setLoading(true);
-
-    const res = await fetch(
-      `/api/customers/search?q=${encodeURIComponent(search)}`
-    );
+    const res = await fetch(`/api/customers/search?q=${encodeURIComponent(search)}`);
     const json = await res.json();
 
     setResults(json.customers ?? []);
@@ -69,36 +73,50 @@ export default function AddCustomerModal({
     return () => clearTimeout(delay);
   }, [search]);
 
-  // ---------------------------------------------------
+  // ---------------------------------------------
   // Load specific discount
-  // ---------------------------------------------------
+  // ---------------------------------------------
   const loadDiscount = async (discountId: number): Promise<Discount | null> => {
     const res = await fetch(`/api/discounts?id=${discountId}`);
     const json = await res.json();
-
-    if (json.discount) return json.discount;
-    if (json.discounts && json.discounts.length > 0) return json.discounts[0];
-
-    return null;
+    return json.discount || null;
   };
 
   // ---------------------------------------------------
-  // Select existing customer
-  // ---------------------------------------------------
-  const selectCustomer = async (customer: Customer) => {
-    let discount: Discount | null = null;
+// Select existing customer  (PATCHED VERSION)
+// ---------------------------------------------------
+const selectCustomer = async (customer: Customer) => {
+  let discount: Discount | null = null;
 
-    if (customer.discount_id) {
-      discount = await loadDiscount(customer.discount_id);
-    }
+  if (customer.discount_id) {
+    discount = await loadDiscount(customer.discount_id);
+  }
 
-    onSelectCustomer(customer, discount);
-    onClose();
-  };
+  // 🔥 FULL customer object returned, including blacklist fields
+  onSelectCustomer(
+    {
+      id: customer.id,
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email ?? null,
+      discount_id: customer.discount_id,
 
-  // ---------------------------------------------------
-  // Create new customer WITH discount
-  // ---------------------------------------------------
+      // BLACKLIST FIELDS
+      is_blacklisted: customer.is_blacklisted ?? false,
+      blacklist_reason: customer.blacklist_reason ?? null,
+      blacklist_start: customer.blacklist_start ?? null,
+      blacklist_end: customer.blacklist_end ?? null,
+    },
+    discount
+  );
+
+  onClose();
+};
+
+
+  // ---------------------------------------------
+  // Create new customer WITH blacklist fields defaulted
+  // ---------------------------------------------
   const saveNewCustomer = async () => {
     if (!newName.trim()) return;
 
@@ -115,26 +133,33 @@ export default function AddCustomerModal({
     const json = await res.json();
     if (!res.ok) return;
 
-    // auto-load discount if any
+    const created: Customer = {
+      ...json.customer,
+      is_blacklisted: false,
+      blacklist_reason: null,
+      blacklist_start: null,
+      blacklist_end: null,
+    };
+
     let discountObj: Discount | null = null;
 
-    if (json.customer.discount_id) {
-      discountObj = await loadDiscount(json.customer.discount_id);
+    if (created.discount_id) {
+      discountObj = await loadDiscount(created.discount_id);
     }
 
-    onSelectCustomer(json.customer, discountObj);
+    onSelectCustomer(created, discountObj);
     onClose();
   };
 
-  // ---------------------------------------------------
+  // ---------------------------------------------
   // UI
-  // ---------------------------------------------------
+  // ---------------------------------------------
   return (
     <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
       <div className="bg-slate-900 w-[420px] p-6 rounded-xl border border-slate-700 shadow-xl text-slate-100">
         <h2 className="text-2xl font-bold mb-4">Add / Select Customer</h2>
 
-        {/* SEARCH */}
+        {/* SEARCH INPUT */}
         <input
           className="w-full p-2 rounded bg-slate-800 border border-slate-700 mb-4"
           placeholder="Search by name or phone…"
@@ -142,6 +167,7 @@ export default function AddCustomerModal({
           onChange={(e) => setSearch(e.target.value)}
         />
 
+        {/* SEARCH RESULTS */}
         {loading ? (
           <p className="text-slate-400 text-sm mb-3">Searching...</p>
         ) : (
@@ -156,6 +182,12 @@ export default function AddCustomerModal({
                   >
                     <p className="font-semibold">{c.name}</p>
                     {c.phone && <p className="text-slate-400">{c.phone}</p>}
+
+                    {c.is_blacklisted && (
+                      <p className="text-red-400 font-bold text-sm mt-1">
+                        ⚠ Blacklisted
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -163,7 +195,7 @@ export default function AddCustomerModal({
           </>
         )}
 
-        {/* CREATE NEW */}
+        {/* CREATE NEW CUSTOMER */}
         <div className="border-t border-slate-700 pt-4 mt-4">
           <h3 className="text-lg font-semibold mb-2">Or Create New</h3>
 
@@ -181,7 +213,6 @@ export default function AddCustomerModal({
             onChange={(e) => setNewPhone(e.target.value)}
           />
 
-          {/* DISCOUNT DROPDOWN */}
           <select
             className="w-full p-2 rounded bg-slate-800 border border-slate-700 mb-4 text-slate-100"
             value={newDiscountId || ""}
@@ -190,7 +221,6 @@ export default function AddCustomerModal({
             }
           >
             <option value="">No Discount</option>
-
             {discounts.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name} — {d.percent}%

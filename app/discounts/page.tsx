@@ -1,4 +1,4 @@
-//  app/discounts/page.tsx
+// app/discounts/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -74,9 +74,14 @@ export default function DiscountsPage() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold">Discounts</h2>
 
+        {/* ACCENT BUTTON */}
         <button
           onClick={() => openModal()}
-          className="bg-fuchsia-600 hover:bg-fuchsia-500 px-4 py-2 rounded-lg"
+          className="
+            px-4 py-2 rounded-lg
+            bg-[color:var(--accent)]
+            hover:bg-[color:var(--accent-hover)]
+          "
         >
           + Add Discount
         </button>
@@ -119,7 +124,7 @@ export default function DiscountsPage() {
         </table>
       </div>
 
-      {/* Modal */}
+      {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
           <div className="bg-slate-900 p-6 rounded-xl w-[400px] border border-slate-700">

@@ -1,3 +1,4 @@
+// app/settings/commission/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -5,7 +6,7 @@ import React, { useEffect, useState } from "react";
 interface CommissionRate {
   role: string;
   rate: number;
-  hourly_rate: number; // NEW FIELD
+  hourly_rate: number;
 }
 
 export default function CommissionSettingsPage() {
@@ -30,24 +31,23 @@ export default function CommissionSettingsPage() {
   // ---------------------------------------------------------
   useEffect(() => {
     async function load() {
-      // Load session
       const sRes = await fetch("/api/auth/session", { cache: "no-store" });
       const sJson = await sRes.json();
       setSession(sJson.staff || null);
 
-      // Load commission + hourly rates
       const rRes = await fetch("/api/settings", { cache: "no-store" });
+      if (!rRes.ok) throw new Error("Settings fetch failed.");
+
       const data = await rRes.json();
 
-      // Merge commission + hourly into one dataset
       const merged: CommissionRate[] = data.commission_rates.map((cr: any) => {
         const hr = data.hourly_rates.find(
           (h: any) => h.role.toLowerCase() === cr.role.toLowerCase()
         );
         return {
           role: cr.role,
-          rate: cr.rate,
-          hourly_rate: hr ? hr.hourly_rate : 0,
+          rate: Number(cr.rate),
+          hourly_rate: hr ? Number(hr.hourly_rate) : 0,
         };
       });
 
@@ -58,23 +58,16 @@ export default function CommissionSettingsPage() {
     load();
   }, []);
 
-  // ---------------------------------------------------------
-  // PERMISSION GUARD
-  // ONLY Admin, Owner, Manager can view
-  // ---------------------------------------------------------
   if (!loading && !isManagerOrAbove) {
     return (
-      <div className="min-h-screen pt-24 p-10 text-red-400 text-xl">
+      <div className="min-h-screen pt-24 px-8 text-red-400 text-xl">
         You do not have permission to view this page.
       </div>
     );
   }
 
-  const canEdit = isAdminOrOwner; // Manager can view only
+  const canEdit = isAdminOrOwner;
 
-  // ---------------------------------------------------------
-  // SAVE CHANGES — updates BOTH commission + hourly
-  // ---------------------------------------------------------
   async function saveChanges() {
     if (!canEdit) return;
 
@@ -87,7 +80,7 @@ export default function CommissionSettingsPage() {
         body: JSON.stringify({
           role: entry.role,
           rate: entry.rate,
-          hourly_rate: entry.hourly_rate, // NEW
+          hourly_rate: entry.hourly_rate,
         }),
       });
     }
@@ -96,47 +89,50 @@ export default function CommissionSettingsPage() {
     alert("Settings updated successfully!");
   }
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="min-h-screen pt-24 p-10 text-slate-300">Loading...</div>
+      <div className="min-h-screen pt-24 px-8 text-slate-300">
+        Loading...
+      </div>
     );
+  }
 
-  // ---------------------------------------------------------
-  // UI
-  // ---------------------------------------------------------
   return (
-    <div className="min-h-screen pt-24 p-10 max-w-4xl mx-auto text-slate-100">
-      <h1 className="text-3xl font-bold mb-4 text-fuchsia-500">
+    <div className="min-h-screen pt-24 px-8 text-slate-100">
+      {/* PAGE TITLE — WHITE EXACTLY LIKE YOUR OTHER SETTINGS PAGES */}
+      <h1 className="text-3xl font-bold mb-4 text-white">
         Commission Settings
       </h1>
 
       <p className="text-slate-400 mb-6">
-        Commission is based on <strong>profit (price − cost_price)</strong>.
-        <br />
-        Hourly rates apply to all timeclock hours.
+        Commission is calculated on <strong>profit (price – cost_price)</strong>.<br />
+        Hourly rates apply to all recorded work hours.
       </p>
 
-      <div className="bg-slate-900 rounded-lg border border-slate-700 p-6">
+      <div className="bg-slate-900 border border-slate-700 rounded-lg p-6">
         <table className="w-full">
-          <thead>
-            <tr className="text-left text-slate-400 border-b border-slate-700">
-              <th className="py-3">Role</th>
-              <th className="py-3">Commission %</th>
-              <th className="py-3">Hourly Rate ($)</th>
+          <thead className="bg-slate-800 border-b border-slate-700 text-slate-300">
+            <tr>
+              <th className="py-3 px-2 text-left">Role</th>
+              <th className="py-3 px-2 text-left">Commission %</th>
+              <th className="py-3 px-2 text-left">Hourly Rate ($)</th>
             </tr>
           </thead>
 
           <tbody>
             {rates.map((r) => (
-              <tr key={r.role} className="border-b border-slate-800">
-                <td className="py-3 capitalize">{r.role.replace(/_/g, " ")}</td>
+              <tr
+                key={r.role}
+                className="border-b border-slate-800 hover:bg-slate-800/70"
+              >
+                <td className="p-3 capitalize">{r.role.replace(/_/g, " ")}</td>
 
-                {/* Commission % */}
-                <td className="py-3">
+                {/* COMMISSION INPUT */}
+                <td className="p-3">
                   <input
                     type="number"
                     disabled={!canEdit}
-                    className={`bg-slate-800 px-3 py-2 rounded border border-slate-700 w-24 ${
+                    className={`bg-slate-800 px-3 py-2 rounded border border-slate-700 w-24 outline-none ${
                       !canEdit ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                     value={r.rate}
@@ -151,12 +147,12 @@ export default function CommissionSettingsPage() {
                   />
                 </td>
 
-                {/* Hourly Rate */}
-                <td className="py-3">
+                {/* HOURLY INPUT */}
+                <td className="p-3">
                   <input
                     type="number"
                     disabled={!canEdit}
-                    className={`bg-slate-800 px-3 py-2 rounded border border-slate-700 w-28 ${
+                    className={`bg-slate-800 px-3 py-2 rounded border border-slate-700 w-28 outline-none ${
                       !canEdit ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                     value={r.hourly_rate}
@@ -179,7 +175,12 @@ export default function CommissionSettingsPage() {
           <button
             onClick={saveChanges}
             disabled={saving}
-            className="mt-6 bg-emerald-600 hover:bg-emerald-500 px-5 py-3 rounded text-white"
+            className="
+              mt-6 px-6 py-3 rounded font-semibold
+              bg-[color:var(--accent)]
+              hover:bg-[color:var(--accent-hover)]
+              disabled:opacity-50
+            "
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>

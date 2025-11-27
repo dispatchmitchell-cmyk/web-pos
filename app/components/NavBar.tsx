@@ -1,63 +1,84 @@
+// app/components/NavBar.tsx
 "use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+import { useState } from "react";
 
-export default function NavBar({ session }: { session?: any }) {
+export default function NavBar({
+  session,
+  businessName,
+  businessLogo,
+  logoWidth = 60,
+  logoHeight = 60,
+}: {
+  session?: any;
+  businessName: string;
+  businessLogo: string;
+  logoWidth?: number;
+  logoHeight?: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Safe fallbacks
   const username = session?.username ?? session?.name ?? "User";
   const roleLevel = Number(session?.permissions_level ?? 0);
   const role = session?.role?.toLowerCase?.() ?? "";
 
-  // Role checks
-  const isManagerOrAbove = roleLevel >= 800; // manager, admin, owner
-  const isManager = role === "manager";
+  const isManagerOrAbove = roleLevel >= 800;
   const isAdmin = role === "admin";
   const isOwner = role === "owner";
   const isAdminOrOwner = isAdmin || isOwner;
 
-  // Logout handler
+  const [logoSrc, setLogoSrc] = useState(businessLogo || "/logo.png");
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
   };
 
-  // Base tabs (no dropdown items)
   const tabs = [
     { name: "POS", href: "/pos" },
     { name: "Timesheet", href: "/timesheet" },
-
     { name: "Customers", href: "/customers" },
     { name: "Items", href: "/items" },
     { name: "Tabs", href: "/tabs" },
     { name: "Categories", href: "/categories" },
     { name: "Discounts", href: "/discounts" },
-
-    // Staff always visible for manager+
-    ...(isManagerOrAbove ? [{ name: "Staff", href: "/staff" }] : []),
+    { name: "Staff", href: "/staff" },
   ];
 
   return (
-    <nav className="fixed top-0 left-0 w-full bg-slate-900 border-b border-slate-800 z-50">
+    <nav className="fixed top-0 left-0 w-full bg-slate-900 border-b border-slate-800 z-50 shadow-md">
       <div className="flex items-center justify-between px-6 py-3">
-
-        {/* LOGO + TITLE */}
+        
+        {/* BUSINESS LOGO + NAME */}
         <div className="flex items-center gap-3">
-          <Image src="/logo.png" width={42} height={42} alt="logo" />
-          <h1 className="text-xl font-bold">Galaxy Nightclub POS</h1>
+          <div
+            style={{
+              width: logoWidth,
+              height: logoHeight,
+            }}
+            className="flex items-center justify-center overflow-hidden rounded-md"
+          >
+            <Image
+              src={logoSrc}
+              width={logoWidth}
+              height={logoHeight}
+              alt="Logo"
+              className="object-contain"
+              onError={() => setLogoSrc("/logo.png")}
+            />
+          </div>
+
+          <h1 className="text-xl font-bold">{businessName}</h1>
         </div>
 
         {/* NAVIGATION */}
         <div className="flex items-center gap-6">
-
-          {/* STANDARD NAV TABS */}
           {tabs.map((tab) => {
             const active = pathname.startsWith(tab.href);
-
             return (
               <Link
                 key={tab.name}
@@ -74,51 +95,32 @@ export default function NavBar({ session }: { session?: any }) {
             );
           })}
 
-          {/* STAFF MANAGEMENT DROPDOWN (Admin, Owner, Manager) */}
+          {/* STAFF MANAGEMENT DROPDOWN */}
           {isManagerOrAbove && (
             <div className="relative group">
-
-              {/* BUTTON */}
               <button
-                className={`px-3 py-2 text-sm font-medium rounded-md transition 
-                  ${
-                    pathname.startsWith("/settings") ||
-                    pathname.startsWith("/payments") ||
-                    pathname.startsWith("/reports")
-                      ? "bg-slate-700 text-white"
-                      : "text-slate-300 hover:text-white hover:bg-slate-800"
-                  }`}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition ${
+                  pathname.startsWith("/settings") ||
+                  pathname.startsWith("/payments") ||
+                  pathname.startsWith("/reports") ||
+                  pathname.startsWith("/live")
+                    ? "bg-slate-700 text-white"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800"
+                }`}
               >
                 Staff Management ▾
               </button>
 
-              {/* DROPDOWN — ALWAYS TOUCHING BUTTON (top-full), NO GAP */}
-              <div className="
-                absolute left-0 top-full 
-                w-44 
-                bg-slate-800 
-                border border-slate-700 
-                rounded-md shadow-lg 
-                py-2 
-                z-50 
-                hidden 
-                group-hover:block
-                pt-1
-              ">
-
-                {/* MANAGER: Payments ONLY */}
-                {isManager && (
-                  <Link
-                    href="/payments"
-                    className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
-                  >
-                    Payments
-                  </Link>
-                )}
-
-                {/* ADMIN + OWNER: Full access */}
+              <div className="absolute left-0 top-full w-44 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-2 hidden group-hover:block">
                 {isAdminOrOwner && (
                   <>
+                    <Link
+                      href="/live"
+                      className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+                    >
+                      Live
+                    </Link>
+
                     <Link
                       href="/settings/commission"
                       className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
@@ -151,25 +153,23 @@ export default function NavBar({ session }: { session?: any }) {
               </div>
             </div>
           )}
-
         </div>
 
-        {/* USER INFO + LOGOUT */}
+        {/* USER INFO */}
         <div className="flex items-center gap-4 text-sm">
-          <div className="text-right">
-            <p className="text-slate-400 leading-none">Logged in as:</p>
-            <p className="font-semibold capitalize leading-none">{username}</p>
+          <div className="text-right leading-tight">
+            <p className="text-slate-400">Logged in as:</p>
+            <p className="font-semibold capitalize">{username}</p>
             <p className="text-slate-500 text-xs capitalize">({role})</p>
           </div>
 
           <button
             onClick={handleLogout}
-            className="px-3 py-2 rounded-md bg-red-600 hover:bg-red-500 text-white font-medium transition"
+            className="px-3 py-2 rounded-md bg-red-600 hover:bg-red-500 text-white"
           >
             Logout
           </button>
         </div>
-
       </div>
     </nav>
   );

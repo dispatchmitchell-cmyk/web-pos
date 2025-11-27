@@ -1,4 +1,4 @@
-// app/staff/components/EditStaffModal.tsx
+//app/staff/components/EditStaffModal.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -24,8 +24,6 @@ export default function EditStaffModal({
   const [name, setName] = useState(staffMember?.name ?? "");
   const [username, setUsername] = useState(staffMember?.username ?? "");
   const [roleId, setRoleId] = useState<number>(staffMember?.role_id ?? 0);
-
-  // IMPORTANT: password must persist and never get “reset” by render
   const [password, setPassword] = useState("");
 
   const [roles, setRoles] = useState<RoleRecord[]>([]);
@@ -37,9 +35,9 @@ export default function EditStaffModal({
   // SESSION CALLER
   const [callerRole, setCallerRole] = useState<string>("staff");
   const [callerLevel, setCallerLevel] = useState<number>(0);
+  const [callerId, setCallerId] = useState<number | null>(null);
 
-  // TARGET STAFF
-  const targetRole = staffMember?.role ?? "staff";
+  const targetRole = staffMember?.role?.toLowerCase?.() ?? "staff";
 
   // -----------------------------------------------------
   // LOAD SESSION
@@ -52,13 +50,14 @@ export default function EditStaffModal({
       if (json?.staff) {
         setCallerRole(json.staff.role.toLowerCase());
         setCallerLevel(json.staff.permissions_level);
+        setCallerId(json.staff.id);
       }
     }
     loadSession();
   }, []);
 
   // -----------------------------------------------------
-  // LOAD ROLES + PRESELECT
+  // LOAD ROLES
   // -----------------------------------------------------
   useEffect(() => {
     async function loadRoles() {
@@ -86,24 +85,40 @@ export default function EditStaffModal({
     loadRoles();
   }, [isEdit, staffMember]);
 
-  // -----------------------------------------------------
-  // ROLE DROPDOWN PERMISSIONS
-  // -----------------------------------------------------
+  // =====================================================
+  // PERMISSION LOGIC
+  // =====================================================
+
+  const isAdmin = callerRole === "admin";
+  const isOwner = callerRole === "owner";
+  const isManager = callerRole === "manager";
+
+  const isSelf = staffMember && callerId === staffMember.id;
+
+  // Who can edit ANYONE
+  const canEditAnyone = isAdmin || isOwner || isManager;
+
+  // FINAL canEdit:
+  // Admin/Owner/Manager → can edit all
+  // Everyone else → ONLY edit self
+  const canEdit = isEdit ? (canEditAnyone || isSelf) : true;
+
+  // ------------------------------
+  // ROLE DROPDOWN DISABLED LOGIC
+  // ------------------------------
   const roleDropdownDisabled = (() => {
-    if (!isEdit) {
-      // NEW STAFF
-      return !(callerRole === "admin" || callerRole === "owner");
-    }
+    if (!isEdit) return !(isAdmin || isOwner);
 
-    // EDIT STAFF
-    if (callerRole === "admin") return false;
+    // ADMIN: full control
+    if (isAdmin) return false;
 
-    if (callerRole === "owner") {
-      if (targetRole === "admin") return true;
-      return false;
-    }
+    // OWNER: cannot modify ADMIN role
+    if (isOwner) return targetRole === "admin";
 
-    // everyone else cannot change roles
+    // MANAGER: cannot change any roles
+    if (isManager) return true;
+
+    // Everyone else: cannot change any roles
     return true;
   })();
 
@@ -111,15 +126,15 @@ export default function EditStaffModal({
   const allowedRoles = roles.filter((role) => {
     const r = role.name.toLowerCase();
 
-    if (callerRole === "admin") return true;
-    if (callerRole === "owner") return r !== "admin";
+    if (isAdmin) return true;
+    if (isOwner) return r !== "admin";
 
     return false;
   });
 
-  // -----------------------------------------------------
+  // =====================================================
   // SAVE
-  // -----------------------------------------------------
+  // =====================================================
   async function handleSave() {
     if (!name.trim() || !username.trim()) {
       alert("Name and username are required.");
@@ -128,6 +143,11 @@ export default function EditStaffModal({
 
     if (!isEdit && !password.trim()) {
       alert("Password is required for new staff.");
+      return;
+    }
+
+    if (isEdit && !canEdit) {
+      alert("You do not have permission to edit this staff member.");
       return;
     }
 
@@ -142,7 +162,7 @@ export default function EditStaffModal({
         }
 
         if (password.trim()) {
-          payload.password = password; // API hashes it
+          payload.password = password;
         }
 
         await updateStaff(staffMember.id, payload);
@@ -165,9 +185,9 @@ export default function EditStaffModal({
     }
   }
 
-  // -----------------------------------------------------
+  // =====================================================
   // UI
-  // -----------------------------------------------------
+  // =====================================================
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-slate-900 border border-slate-700 p-6 rounded-xl w-96 text-slate-100 shadow-xl">
@@ -177,20 +197,29 @@ export default function EditStaffModal({
 
         <div className="space-y-3">
 
+          {/* NAME */}
           <label className="text-sm text-slate-300">Full Name</label>
           <input
-            className="w-full bg-slate-800 border border-slate-700 p-2 rounded"
+            disabled={!canEdit}
+            className={`w-full bg-slate-800 border border-slate-700 p-2 rounded ${
+              !canEdit ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
 
+          {/* USERNAME */}
           <label className="text-sm text-slate-300">Username</label>
           <input
-            className="w-full bg-slate-800 border border-slate-700 p-2 rounded"
+            disabled={!canEdit}
+            className={`w-full bg-slate-800 border border-slate-700 p-2 rounded ${
+              !canEdit ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
 
+          {/* ROLE */}
           <label className="text-sm text-slate-300">Role</label>
           {rolesLoading ? (
             <div className="text-slate-400">Loading roles...</div>
@@ -211,6 +240,7 @@ export default function EditStaffModal({
             </select>
           )}
 
+          {/* PASSWORD */}
           <label className="text-sm text-slate-300">
             {isEdit ? "New Password (optional)" : "Password"}
           </label>
@@ -218,9 +248,7 @@ export default function EditStaffModal({
             <input
               type={showPassword ? "text" : "password"}
               className="w-full bg-slate-800 border border-slate-700 p-2 rounded"
-              placeholder={
-                isEdit ? "New password (optional)" : "Password"
-              }
+              placeholder={isEdit ? "New password (optional)" : "Password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -235,6 +263,7 @@ export default function EditStaffModal({
           </div>
         </div>
 
+        {/* BUTTONS */}
         <div className="flex justify-end space-x-3 mt-6">
           <button
             onClick={onClose}
@@ -246,7 +275,7 @@ export default function EditStaffModal({
 
           <button
             onClick={handleSave}
-            disabled={loading || rolesLoading}
+            disabled={loading || rolesLoading || !canEdit}
             className="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 rounded text-white disabled:opacity-50"
           >
             {loading ? "Saving..." : "Save"}

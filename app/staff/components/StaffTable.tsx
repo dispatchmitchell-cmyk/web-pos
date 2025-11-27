@@ -1,4 +1,3 @@
-// app/staff/components/StaffTable.tsx
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -21,193 +20,125 @@ export default function StaffTable({
     permissions: number;
   } | null>(null);
 
-  // -------------------------------------------------
-  // Load current session
-  // -------------------------------------------------
+  // Load session
   useEffect(() => {
     async function loadSession() {
-      try {
-        const res = await fetch("/api/auth/session", { cache: "no-store" });
-        const json = await res.json();
-        if (!json.staff) return;
+      const res = await fetch("/api/auth/session", { cache: "no-store" });
+      const json = await res.json();
+      if (!json.staff) return;
 
-        setCurrentUser({
-          id: json.staff.id,
-          role: json.staff.role.toLowerCase(),
-          permissions: json.staff.permissions_level ?? 0,
-        });
-      } catch (e) {
-        console.error("Failed to load session", e);
-      }
+      setCurrentUser({
+        id: json.staff.id,
+        role: json.staff.role.toLowerCase(),
+        permissions: json.staff.permissions_level ?? 0,
+      });
     }
-
     loadSession();
   }, []);
 
-  // -------------------------------------------------
-  // PERMISSION LOGIC
-  // -------------------------------------------------
+  // Permission logic
   function canModify(member: StaffRecord): boolean {
     if (!currentUser) return false;
-
-    const callerId = currentUser.id;
-    const callerRole = currentUser.role;
-    const targetRole = member.role.toLowerCase();
-    const targetId = member.id;
-
-    // 1. Everyone can edit themselves
-    if (callerId === targetId) return true;
-
-    // 2. Admin can edit anyone
-    if (callerRole === "admin") return true;
-
-    // 3. Owner can edit anyone except admin
-    if (callerRole === "owner") {
-      if (targetRole === "admin") return false;
-      return true;
-    }
-
-    // 4. Everyone else cannot edit others
+    if (currentUser.id === member.id) return true;
+    if (currentUser.role === "admin") return true;
+    if (currentUser.role === "owner" && member.role !== "admin") return true;
     return false;
   }
 
   function canDelete(member: StaffRecord): boolean {
     if (!currentUser) return false;
-
-    const callerId = currentUser.id;
-    const callerRole = currentUser.role;
-    const targetRole = member.role.toLowerCase();
-    const targetId = member.id;
-
-    // 1. No one can delete themselves
-    if (callerId === targetId) return false;
-
-    // 2. Admin can delete anyone except self
-    if (callerRole === "admin") return true;
-
-    // 3. Owner can delete anyone except admin
-    if (callerRole === "owner") {
-      if (targetRole === "admin") return false;
-      return true;
-    }
-
-    // 4. Everyone else cannot delete anyone
+    if (currentUser.id === member.id) return false;
+    if (currentUser.role === "admin") return true;
+    if (currentUser.role === "owner" && member.role !== "admin") return true;
     return false;
   }
 
-  // -------------------------------------------------
-  // SORT STAFF BY ROLE PRIORITY THEN ALPHABETICALLY
-  // -------------------------------------------------
+  // Sort staff
   const sortedStaff = useMemo(() => {
-    if (!staff) return [];
-
     return [...staff].sort((a, b) => {
-      // Sort by permissions_level DESC (higher first)
       if (a.permissions_level !== b.permissions_level) {
         return b.permissions_level - a.permissions_level;
       }
-
-      // Then alphabetically by name ASC
       return a.name.localeCompare(b.name);
     });
   }, [staff]);
 
-  // -------------------------------------------------
-  // DELETE HANDLER
-  // -------------------------------------------------
-  async function handleDelete(member: StaffRecord) {
-    if (!confirm(`Delete ${member.name}? This cannot be undone.`)) return;
+  // Fixed delete handler
+  const handleDelete = async (member: StaffRecord) => {
+    if (!confirm(`Delete ${member.name}?`)) return;
 
-    try {
-      const res = await fetch(`/api/staff?id=${member.id}`, {
-        method: "DELETE",
-      });
-      const json = await res.json();
+    const res = await fetch(`/api/staff?id=${member.id}`, {
+      method: "DELETE",
+    });
 
-      if (!res.ok) {
-        alert(json.error || "Failed to delete staff.");
-        return;
-      }
-
-      await onRefresh();
-    } catch (err) {
-      console.error("Failed to delete", err);
-      alert("Delete error. Check console.");
+    const json = await res.json();
+    if (!res.ok) {
+      alert(json.error || "Failed to delete staff.");
+      return;
     }
-  }
 
-  // -------------------------------------------------
-  // UI
-  // -------------------------------------------------
+    await onRefresh();
+  };
+
   return (
-    <div className="bg-slate-900 p-4 rounded-xl shadow-lg">
-      <table className="w-full text-left">
-        <thead>
-          <tr className="text-fuchsia-400 border-b border-slate-700">
-            <th className="py-2 px-2">Name</th>
-            <th className="py-2 px-2">Username</th>
-            <th className="py-2 px-2">Role</th>
-            <th className="py-2 px-2 text-right">Actions</th>
+    <table className="w-full text-sm">
+      <thead className="bg-slate-800 border-b border-slate-700">
+        <tr>
+          <th className="p-3 text-left">Name</th>
+          <th className="p-3 text-left">Username</th>
+          <th className="p-3 text-left">Role</th>
+          <th className="p-3 text-right">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {sortedStaff.length === 0 ? (
+          <tr>
+            <td colSpan={4} className="p-6 text-center text-slate-500 italic">
+              No staff found.
+            </td>
           </tr>
-        </thead>
+        ) : (
+          sortedStaff.map((member) => {
+            const editable = canModify(member);
+            const deletable = canDelete(member);
 
-        <tbody>
-          {sortedStaff.length === 0 ? (
-            <tr>
-              <td colSpan={4} className="py-4 text-slate-500 text-center">
-                No staff found.
-              </td>
-            </tr>
-          ) : (
-            sortedStaff.map((member) => {
-              const editable = canModify(member);
-              const deletable = canDelete(member);
+            return (
+              <tr
+                key={member.id}
+                className="border-b border-slate-800 hover:bg-slate-800"
+              >
+                <td className="p-3">{member.name}</td>
+                <td className="p-3">{member.username}</td>
+                <td className="p-3 capitalize">{member.role}</td>
 
-              return (
-                <tr key={member.id} className="border-b border-slate-800">
-                  <td className="py-2 px-2">{member.name}</td>
-                  <td className="py-2 px-2">{member.username}</td>
-                  <td className="py-2 px-2 capitalize">{member.role}</td>
+                <td className="p-3 text-right space-x-4">
+                  {/* EDIT */}
+                  <button
+                    disabled={!editable}
+                    onClick={() => editable && onEdit(member)}
+                    className={`text-amber-400 hover:text-amber-300 ${
+                      !editable ? "opacity-40 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    Edit
+                  </button>
 
-                  {/* ACTIONS */}
-                  <td className="py-2 px-2 text-right space-x-4">
-
-                    {/* EDIT BUTTON — Yellow */}
+                  {/* DELETE */}
+                  {deletable && (
                     <button
-                      disabled={!editable}
-                      onClick={() => editable && onEdit(member)}
-                      className={`text-yellow-400 hover:underline ${
-                        !editable ? "opacity-30 cursor-not-allowed" : ""
-                      }`}
+                      onClick={() => handleDelete(member)}
+                      className="text-red-400 hover:text-red-300"
                     >
-                      Edit
+                      Delete
                     </button>
-
-                    {/* DELETE BUTTON — Red */}
-                    {deletable && (
-                      <button
-                        onClick={() => handleDelete(member)}
-                        className="text-red-500 hover:underline"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
-
-      <div className="mt-4 text-right">
-        <button
-          onClick={onRefresh}
-          className="text-slate-400 hover:text-white text-sm underline"
-        >
-          Refresh
-        </button>
-      </div>
-    </div>
+                  )}
+                </td>
+              </tr>
+            );
+          })
+        )}
+      </tbody>
+    </table>
   );
 }

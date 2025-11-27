@@ -41,9 +41,8 @@ export default function TimesheetPage() {
   );
 
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
-  const [clockedInEntry, setClockedInEntry] = useState<TimesheetEntry | null>(
-    null
-  );
+  const [clockedInEntry, setClockedInEntry] =
+    useState<TimesheetEntry | null>(null);
 
   const [timer, setTimer] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -89,7 +88,7 @@ export default function TimesheetPage() {
   };
 
   // ------------------------------
-  // Clock In
+  // Clock In / Out
   // ------------------------------
   const clockIn = async () => {
     await fetch("/api/timesheet/clockin", { method: "POST" });
@@ -97,9 +96,6 @@ export default function TimesheetPage() {
     await loadMySummary();
   };
 
-  // ------------------------------
-  // Clock Out
-  // ------------------------------
   const clockOut = async () => {
     await fetch("/api/timesheet/clockout", { method: "POST" });
     await loadEntries();
@@ -176,7 +172,7 @@ export default function TimesheetPage() {
           <div className="text-lg text-slate-300 mb-1">
             Monthly Top Hours
           </div>
-          <div className="text-2xl font-bold text-fuchsia-400">
+          <div className="text-2xl font-bold text-[color:var(--accent)]">
             {topHours
               ? `${topHours.staff_name} — ${fmt.hours(topHours.hours)}`
               : "No data"}
@@ -226,21 +222,21 @@ export default function TimesheetPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg">
           <h3 className="text-slate-300 mb-2">Hours This Week</h3>
-          <p className="text-3xl font-bold text-fuchsia-400">
+          <p className="text-3xl font-bold text-[color:var(--accent)]">
             {fmt.hours(mySummary.weekly.hours)}
           </p>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg">
           <h3 className="text-slate-300 mb-2">Shifts This Week</h3>
-          <p className="text-3xl font-bold text-fuchsia-400">
+          <p className="text-3xl font-bold text-[color:var(--accent)]">
             {mySummary.weekly.shifts}
           </p>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg">
           <h3 className="text-slate-300 mb-2">Avg Shift Length</h3>
-          <p className="text-3xl font-bold text-fuchsia-400">
+          <p className="text-3xl font-bold text-[color:var(--accent)]">
             {mySummary.averages.avg_shift_length.toFixed(1)}h
           </p>
         </div>
@@ -253,7 +249,9 @@ export default function TimesheetPage() {
         <div className="mb-12">
           <Link
             href="/timesheet/admin"
-            className="text-fuchsia-400 hover:text-fuchsia-300 underline text-lg"
+            className="underline text-lg
+              text-[color:var(--accent)]
+              hover:text-[color:var(--accent-hover)]"
           >
             Manage Timesheets →
           </Link>

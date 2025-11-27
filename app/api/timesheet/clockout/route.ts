@@ -43,10 +43,18 @@ export async function POST() {
 
     const now = new Date().toISOString();
 
+    // CALCULATE HOURS WORKED
+    const clockInTime = new Date(activeShift.clock_in).getTime();
+    const clockOutTime = Date.now();
+    const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60;
+
+    // UPDATE shift: clock_out, hours_worked, is_clocked_in FALSE
     const { error } = await supabase
       .from("timesheets")
       .update({
-        clock_out: now
+        clock_out: now,
+        hours_worked: hoursWorked,
+        is_clocked_in: false
       })
       .eq("id", activeShift.id);
 
@@ -61,7 +69,9 @@ export async function POST() {
     return NextResponse.json({
       success: true,
       id: activeShift.id,
-      clock_out: now
+      clock_in: activeShift.clock_in,
+      clock_out: now,
+      hours_worked: hoursWorked
     });
   } catch (err) {
     console.error("Clockout fatal error:", err);

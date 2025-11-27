@@ -24,7 +24,9 @@ export default function TabsPage() {
     setTabs(json.tabs || []);
   };
 
-  useEffect(() => { loadTabs(); }, []);
+  useEffect(() => {
+    loadTabs();
+  }, []);
 
   const openModal = (tab?: Tab) => {
     if (tab) {
@@ -70,9 +72,14 @@ export default function TabsPage() {
       <div className="flex justify-between mb-6">
         <h2 className="text-3xl font-bold">Tabs</h2>
 
+        {/* ACCENT BUTTON */}
         <button
           onClick={() => openModal()}
-          className="bg-fuchsia-600 hover:bg-fuchsia-500 px-4 py-2 rounded-lg"
+          className="
+            px-4 py-2 rounded-lg
+            bg-[color:var(--accent)]
+            hover:bg-[color:var(--accent-hover)]
+          "
         >
           + Add Tab
         </button>

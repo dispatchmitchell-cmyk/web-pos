@@ -1,173 +1,246 @@
 // app/settings/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
-// Must match /api/auth/session normalized output
-type SessionStaff = {
+type Staff = {
   id: number;
   name: string;
   username: string;
   role: string;
-  role_id: number;
-  role_name: string;
   permissions_level: number;
-  commission_rate: number;
+};
+
+type BusinessSettings = {
+  business_name: string;
+  business_logo_url: string | null;
+  theme_color: string;
+  logo_width: number | null;
+  logo_height: number | null;
 };
 
 export default function SettingsPage() {
-  const [staff, setStaff] = useState<SessionStaff | null>(null);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  // -------------------------------------------------------
-  // LOAD SESSION
-  // -------------------------------------------------------
+  const [staff, setStaff] = useState<Staff | null>(null);
+  const [settings, setSettings] = useState<BusinessSettings | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+
+  // form fields
+  const [businessName, setBusinessName] = useState("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [themeColor, setThemeColor] = useState("#d946ef");
+
+  const [logoWidth, setLogoWidth] = useState(60);
+  const [logoHeight, setLogoHeight] = useState(60);
+
+  // ---------------------------------------------------------
+  // LOAD session + settings
+  // ---------------------------------------------------------
   useEffect(() => {
     async function load() {
-      const sessionRes = await fetch("/api/auth/session", {
-        cache: "no-store",
-      });
-      const sessionData = await sessionRes.json();
-      setStaff(sessionData.staff || null);
+      const s = await fetch("/api/auth/session").then((r) => r.json());
+      setStaff(s.staff || null);
+
+      const bs = await fetch("/api/settings/business").then((r) => r.json());
+      if (bs.settings) {
+        setSettings(bs.settings);
+        setBusinessName(bs.settings.business_name);
+        setLogoUrl(bs.settings.business_logo_url);
+        setThemeColor(bs.settings.theme_color);
+
+        setLogoWidth(bs.settings.logo_width ?? 60);
+        setLogoHeight(bs.settings.logo_height ?? 60);
+      }
 
       setLoading(false);
     }
-
     load();
   }, []);
 
-  if (loading) {
+  if (loading)
     return (
-      <div className="min-h-screen flex justify-center items-center text-slate-50">
-        Loading settings...
+      <div className="min-h-screen flex items-center justify-center text-white">
+        Loading...
       </div>
     );
+
+  if (!staff)
+    return <div className="p-10 text-white">Not authenticated</div>;
+
+  if (staff.permissions_level < 900)
+    return (
+      <div className="p-10 text-red-400 text-xl">
+        You do not have permission to view this page.
+      </div>
+    );
+
+  // ---------------------------------------------------------
+  // UPLOAD LOGO
+  // ---------------------------------------------------------
+  async function uploadLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const form = new FormData();
+    form.append("file", file);
+
+    const res = await fetch("/api/settings/upload-logo", {
+      method: "POST",
+      body: form,
+    });
+
+    const json = await res.json();
+
+    if (json.error) {
+      alert("Upload failed: " + json.error);
+      setUploading(false);
+      return;
+    }
+
+    setLogoUrl(json.url);
+    setUploading(false);
   }
 
-  if (!staff) {
-    return (
-      <div className="min-h-screen flex justify-center items-center text-slate-50">
-        Not authenticated
-      </div>
-    );
-  }
+  // ---------------------------------------------------------
+  // SAVE SETTINGS (auto-refresh added)
+  // ---------------------------------------------------------
+  async function saveSettings() {
+    const res = await fetch("/api/settings/business", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        business_name: businessName,
+        business_logo_url: logoUrl,
+        theme_color: themeColor,
+        logo_width: logoWidth,
+        logo_height: logoHeight,
+      }),
+    });
 
-  // -------------------------------------------------------
-  // PERMISSION LOGIC — Admin + Owner ONLY
-  // Admin = 1000
-  // Owner = 900
-  // -------------------------------------------------------
-  const isAdminOrOwner = staff.permissions_level >= 900;
+    if (!res.ok) return alert("Failed to save");
 
-  if (!isAdminOrOwner) {
-    return (
-      <div className="min-h-screen flex justify-center items-center text-red-400 text-xl pt-24">
-        You do not have permission to view Settings.
-      </div>
-    );
+    alert("Settings saved!");
+
+    // 🔥 Auto-refresh page so new logo/theme is applied in navbar
+    router.refresh();
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50">
-      <div className="pt-24 px-8 max-w-3xl mx-auto space-y-10">
+    <div className="min-h-screen bg-slate-950 text-white px-8 pt-24 max-w-3xl mx-auto space-y-10">
 
-        {/* ---------------------------------------------------
-           PROFILE
-        --------------------------------------------------- */}
-        <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
-          <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
+      {/* Profile */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg">
+        <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
+        <p>Name: {staff.name}</p>
+        <p>Role: {staff.role}</p>
+        <p>Username: {staff.username}</p>
+      </div>
 
-          <div className="space-y-3">
-            <p><span className="text-slate-400">Name:</span> {staff.name}</p>
-            <p><span className="text-slate-400">Role:</span> {staff.role}</p>
-            <p><span className="text-slate-400">Username:</span> {staff.username}</p>
+      {/* Business Settings */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg space-y-5">
+        <h2 className="text-2xl font-bold">Business Settings</h2>
+
+        {/* Name */}
+        <div>
+          <label className="block text-sm mb-1">Business Name</label>
+          <input
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+            className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
+          />
+        </div>
+
+        {/* Color */}
+        <div>
+          <label className="block text-sm mb-1">Accent Colour</label>
+          <input
+            type="color"
+            value={themeColor}
+            onChange={(e) => setThemeColor(e.target.value)}
+            className="w-20 h-10 cursor-pointer"
+          />
+        </div>
+
+        {/* Logo Preview */}
+        <div>
+          <label className="block text-sm mb-2">Business Logo</label>
+
+          <div className="flex items-center gap-4">
+            <div
+              className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden flex items-center justify-center"
+              style={{ width: logoWidth, height: logoHeight }}
+            >
+              {logoUrl ? (
+                <Image
+                  src={logoUrl}
+                  alt="Logo"
+                  width={logoWidth}
+                  height={logoHeight}
+                  className="object-contain"
+                />
+              ) : (
+                <span className="text-slate-500">No Logo</span>
+              )}
+            </div>
+
+            <div>
+              <input type="file" accept="image/*" onChange={uploadLogo} />
+              {uploading && (
+                <p className="text-xs text-slate-400 mt-1">Uploading...</p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ---------------------------------------------------
-           BUSINESS SETTINGS
-        --------------------------------------------------- */}
-        <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
-          <h2 className="text-2xl font-bold mb-4">Business Settings</h2>
-
-          <div className="mb-4">
-            <label className="block text-sm text-slate-300 mb-1">
-              Business Name
-            </label>
+        {/* Logo Sizing */}
+        <div className="flex gap-4">
+          <div>
+            <label className="block text-sm mb-1">Logo Width (px)</label>
             <input
-              defaultValue="Galaxy Nightclub"
-              disabled
-              className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
+              type="number"
+              value={logoWidth}
+              onChange={(e) => setLogoWidth(Number(e.target.value))}
+              className="p-2 bg-slate-800 border border-slate-700 rounded w-24"
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm text-slate-300 mb-1">Theme</label>
-            <select
-              defaultValue="dark"
-              disabled
-              className="p-2 bg-slate-800 border border-slate-700 rounded"
-            >
-              <option value="dark">Dark (Recommended)</option>
-              <option value="light">Light (Not ready)</option>
-            </select>
-          </div>
-
           <div>
-            <p className="text-sm text-slate-300 mb-2">Business Logo</p>
-            <div className="w-20 h-20 bg-slate-800 border border-slate-700 flex items-center justify-center rounded-lg">
-              <Image src="/logo.png" width={60} height={60} alt="logo" />
-            </div>
-            <p className="text-xs mt-2 text-slate-400 italic">
-              Replace <code>/public/logo.png</code> to update logo
-            </p>
+            <label className="block text-sm mb-1">Logo Height (px)</label>
+            <input
+              type="number"
+              value={logoHeight}
+              onChange={(e) => setLogoHeight(Number(e.target.value))}
+              className="p-2 bg-slate-800 border border-slate-700 rounded w-24"
+            />
           </div>
         </div>
 
-        {/* ---------------------------------------------------
-           DATA TOOLS
-        --------------------------------------------------- */}
-        <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg">
-          <h2 className="text-2xl font-bold mb-4">Data Tools</h2>
+        {/* Save Button */}
+        <button
+          onClick={saveSettings}
+          className="
+            px-4 py-2 rounded-lg font-semibold
+            bg-[color:var(--accent)]
+            hover:bg-[color:var(--accent-hover)]
+          "
+        >
+          Save Business Settings
+        </button>
+      </div>
 
-          <button
-            onClick={async () => {
-              const res = await fetch("/api/export/csv");
-
-              if (!res.ok) {
-                alert("Failed to export POS data");
-                return;
-              }
-
-              const blob = await res.blob();
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = "pos_export.csv";
-              a.click();
-              window.URL.revokeObjectURL(url);
-            }}
-            className="w-full bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded-md font-semibold"
-          >
-            Export POS Data → CSV
+      {/* Logout */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 text-center">
+        <form action="/api/auth/logout" method="POST">
+          <button className="bg-red-600 hover:bg-red-500 px-6 py-3 rounded-md font-semibold">
+            Logout
           </button>
-        </div>
-
-        {/* ---------------------------------------------------
-           LOGOUT
-        --------------------------------------------------- */}
-        <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 shadow-lg text-center">
-          <form action="/api/auth/logout" method="POST">
-            <button
-              type="submit"
-              className="bg-red-600 hover:bg-red-500 px-6 py-3 rounded-md text-lg font-semibold"
-            >
-              Logout
-            </button>
-          </form>
-        </div>
-
+        </form>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-// app/payments/components/PaymentHistoryTable.tsx
+//  app/payments/components/PaymentHistoryTable.tsx
 "use client";
 
 import React from "react";

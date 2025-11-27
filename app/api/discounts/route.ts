@@ -58,12 +58,11 @@ async function requireOwnerOrAdmin(req: Request) {
 
 // -----------------------------------------------------------------------------
 // GET — All discounts or one by ?id
+// (READ access: ALL staff roles allowed)
 // -----------------------------------------------------------------------------
 export async function GET(req: Request) {
   try {
-    const guard = await requireOwnerOrAdmin(req);
-    if (!guard.ok)
-      return NextResponse.json({ error: guard.message }, { status: guard.status });
+    // ❌ REMOVE permissions check so ALL staff can read discounts
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -92,6 +91,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ discounts: [] });
   }
 }
+
 
 // -----------------------------------------------------------------------------
 // POST — Create discount

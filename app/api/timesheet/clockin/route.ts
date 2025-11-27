@@ -40,11 +40,13 @@ export async function POST() {
 
     const now = new Date().toISOString();
 
+    // INSERT shift with is_clocked_in = TRUE
     const { error } = await supabase
       .from("timesheets")
       .insert({
         staff_id: staffId,
-        clock_in: now
+        clock_in: now,
+        is_clocked_in: true
       });
 
     if (error) {

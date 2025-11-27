@@ -1,4 +1,4 @@
-// app/api/staff/route.ts
+//app/api/staff/route.ts
 /**
  * STAFF MANAGEMENT API
  * Handles CRUD, permission logic, and password hashing.
@@ -39,13 +39,14 @@ function normalizeStaffRow(row: any): StaffRecord {
 }
 
 // ---------------------------------------------------------
-// GET CALLER INFO
+// GET CALLER INFO (always required)
 // ---------------------------------------------------------
 async function getCallerInfo(): Promise<StaffRecord | null> {
   const session = await getSession();
   if (!session?.staff?.id) return null;
 
   const supabase = supabaseServer();
+
   const { data, error } = await supabase
     .from("staff")
     .select(
@@ -73,15 +74,19 @@ async function getCallerInfo(): Promise<StaffRecord | null> {
 // MODIFY PERMISSION LOGIC
 // ---------------------------------------------------------
 function canModify(caller: StaffRecord, target: StaffRecord): string | null {
+  // Everyone can edit themselves
   if (caller.id === target.id) return null;
 
+  // Admin full access
   if (caller.role === "admin") return null;
 
+  // Owner cannot modify admin
   if (caller.role === "owner") {
     if (target.role === "admin") return "Owners cannot modify admin accounts.";
     return null;
   }
 
+  // Everyone else blocked
   return "You may not modify other staff.";
 }
 
@@ -94,22 +99,24 @@ function canAssignRole(
 ): string | null {
   const newName = newRole.name.toLowerCase();
 
-  if (caller.role === "owner" && newName === "admin")
+  if (caller.role === "owner" && newName === "admin") {
     return "Owners cannot assign admin role.";
+  }
 
   return null;
 }
 
 // ---------------------------------------------------------
-// GET STAFF LIST
+// GET STAFF LIST  (FIXED TO ALLOW ALL ROLES)
 // ---------------------------------------------------------
 export async function GET() {
   const caller = await getCallerInfo();
-  if (!caller)
+  if (!caller) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
 
-  if (caller.permissions_level < 800)
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // ❌ Removed the "permissions_level >= 800" restriction
+  // Anyone logged in can read staff list
 
   const supabase = supabaseServer();
 
@@ -130,10 +137,13 @@ export async function GET() {
     )
     .order("id");
 
-  if (error)
+  if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
-  return NextResponse.json({ staff: data.map(normalizeStaffRow) });
+  return NextResponse.json({
+    staff: data.map(normalizeStaffRow),
+  });
 }
 
 // ---------------------------------------------------------
@@ -244,7 +254,7 @@ export async function PUT(req: Request) {
   if (modifyError)
     return NextResponse.json({ error: modifyError }, { status: 403 });
 
-  // SELF ROLE PROTECT
+  // Prevent non-admin/owner from changing their own role
   if (
     updates.role_id !== undefined &&
     caller.id === id &&
@@ -272,7 +282,6 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: assignError }, { status: 403 });
   }
 
-  // PASSWORD UPDATE
   if (updates.password) {
     updates.password_hash = await bcrypt.hash(updates.password, 10);
     delete updates.password;
@@ -304,7 +313,7 @@ export async function PUT(req: Request) {
 }
 
 // ---------------------------------------------------------
-// DELETE STAFF (FINAL RULES)
+// DELETE STAFF
 // ---------------------------------------------------------
 export async function DELETE(req: Request) {
   const caller = await getCallerInfo();
@@ -340,11 +349,7 @@ export async function DELETE(req: Request) {
 
   const target = normalizeStaffRow(targetRaw);
 
-  // ------------------------------
-  // FINAL DELETE RULES
-  // ------------------------------
-
-  // ❌ Nobody can delete admin
+  // No one can delete admin
   if (target.role === "admin") {
     return NextResponse.json(
       { error: "Admin accounts cannot be deleted." },
@@ -352,9 +357,7 @@ export async function DELETE(req: Request) {
     );
   }
 
-  // Admin and Owner can delete owner + everyone else
   if (caller.role === "admin" || caller.role === "owner") {
-    // Prevent self-delete for safety
     if (caller.id === target.id) {
       return NextResponse.json(
         { error: "You cannot delete your own account." },
@@ -362,7 +365,6 @@ export async function DELETE(req: Request) {
       );
     }
   } else {
-    // Everyone else cannot delete anyone
     return NextResponse.json(
       { error: "You are not allowed to delete staff." },
       { status: 403 }

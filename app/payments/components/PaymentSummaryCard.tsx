@@ -26,13 +26,7 @@ interface Props {
 }
 
 export default function PaymentSummaryCard({ summary }: Props) {
-  const {
-    period,
-    hours,
-    commission,
-    total_pay,
-    last_paid
-  } = summary;
+  const { period, hours, commission, total_pay, last_paid } = summary;
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("en-US", {
@@ -40,14 +34,14 @@ export default function PaymentSummaryCard({ summary }: Props) {
       day: "numeric",
       year: "numeric",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     });
 
   return (
     <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-lg">
 
-      {/* TITLE */}
-      <h2 className="text-2xl font-bold mb-4 text-fuchsia-400">
+      {/* TITLE — NOW GREEN */}
+      <h2 className="text-2xl font-bold mb-4 text-white">
         Payment Summary
       </h2>
 
@@ -63,7 +57,7 @@ export default function PaymentSummaryCard({ summary }: Props) {
 
       <div className="border-t border-slate-700 my-4"></div>
 
-      {/* HOURS SECTION */}
+      {/* HOURS */}
       <div className="mb-6">
         <p className="text-slate-400 uppercase tracking-wider text-xs mb-2">
           Hours Worked
@@ -76,22 +70,18 @@ export default function PaymentSummaryCard({ summary }: Props) {
 
         <div className="flex justify-between text-slate-300 mt-1">
           <span>Hourly Rate:</span>
-          <span className="font-semibold">
-            ${hours.hourly_rate.toFixed(2)}
-          </span>
+          <span className="font-semibold">${hours.hourly_rate.toFixed(2)}</span>
         </div>
 
         <div className="flex justify-between text-slate-300 mt-1">
           <span>Hourly Pay:</span>
-          <span className="font-semibold">
-            ${hours.hourly_pay.toFixed(2)}
-          </span>
+          <span className="font-semibold">${hours.hourly_pay.toFixed(2)}</span>
         </div>
       </div>
 
       <div className="border-t border-slate-700 my-4"></div>
 
-      {/* COMMISSION SECTION */}
+      {/* COMMISSION */}
       <div className="mb-6">
         <p className="text-slate-400 uppercase tracking-wider text-xs mb-2">
           Commission
@@ -119,7 +109,7 @@ export default function PaymentSummaryCard({ summary }: Props) {
 
       <div className="border-t border-slate-700 my-4"></div>
 
-      {/* TOTAL PAY SECTION */}
+      {/* TOTAL */}
       <div className="mb-4">
         <p className="text-slate-400 uppercase tracking-wider text-xs mb-2">
           Total Pay
@@ -130,15 +120,12 @@ export default function PaymentSummaryCard({ summary }: Props) {
         </p>
       </div>
 
-      {/* LAST PAID INFO */}
       {last_paid && (
-        <div className="mt-6">
-          <p className="text-slate-500 text-sm">
-            Last Paid:{" "}
-            <span className="text-slate-300 font-medium">
-              {formatDate(last_paid)}
-            </span>
-          </p>
+        <div className="mt-6 text-slate-500 text-sm">
+          Last Paid:{" "}
+          <span className="text-slate-300 font-medium">
+            {formatDate(last_paid)}
+          </span>
         </div>
       )}
     </div>

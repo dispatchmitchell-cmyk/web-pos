@@ -1,4 +1,4 @@
-//  app/api/customers/route.ts
+// app/api/customers/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -14,7 +14,17 @@ const supabase = createClient(
 export async function GET() {
   const { data, error } = await supabase
     .from("customers")
-    .select("id, name, phone, email, discount_id")
+    .select(`
+      id,
+      name,
+      phone,
+      email,
+      discount_id,
+      is_blacklisted,
+      blacklist_reason,
+      blacklist_start,
+      blacklist_end
+    `)
     .order("name");
 
   if (error) {
@@ -37,6 +47,12 @@ export async function POST(req: Request) {
       phone: body.phone ?? null,
       email: body.email ?? null,
       discount_id: body.discount_id ?? null,
+
+      // blacklist fields (optional)
+      is_blacklisted: body.is_blacklisted ?? false,
+      blacklist_reason: body.blacklist_reason ?? null,
+      blacklist_start: body.blacklist_start ?? null,
+      blacklist_end: body.blacklist_end ?? null,
     };
 
     const { data, error } = await supabase
@@ -76,6 +92,12 @@ export async function PUT(req: Request) {
       phone: body.phone ?? null,
       email: body.email ?? null,
       discount_id: body.discount_id ?? null,
+
+      // blacklist fields
+      is_blacklisted: body.is_blacklisted ?? null,
+      blacklist_reason: body.blacklist_reason ?? null,
+      blacklist_start: body.blacklist_start ?? null,
+      blacklist_end: body.blacklist_end ?? null,
     };
 
     const { data, error } = await supabase

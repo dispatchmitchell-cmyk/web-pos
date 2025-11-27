@@ -1,4 +1,4 @@
-// app/payments/components/ConfirmPaymentModal.tsx
+//  app/payments/components/ConfirmPaymentModal.tsx
 "use client";
 
 import React, { useState } from "react";

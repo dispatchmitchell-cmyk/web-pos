@@ -1,4 +1,4 @@
-//  app/api/customers/search/route.ts
+// app/api/customers/search/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -33,13 +33,21 @@ export async function GET(req: Request) {
 
     // ----------------------------------------------------
     // 2. Search customers by name/phone
+    //    (INCLUDES BLACKLIST FIELDS NOW)
     // ----------------------------------------------------
-    const {
-      data: basicMatchesRaw,
-      error: custErr1,
-    } = await supabase
+    const { data: basicMatchesRaw, error: custErr1 } = await supabase
       .from("customers")
-      .select("id, name, phone, email, discount_id")
+      .select(`
+        id,
+        name,
+        phone,
+        email,
+        discount_id,
+        is_blacklisted,
+        blacklist_reason,
+        blacklist_start,
+        blacklist_end
+      `)
       .or(`name.ilike.%${q}%, phone.ilike.%${q}%`)
       .order("name");
 
@@ -50,14 +58,24 @@ export async function GET(req: Request) {
       : [];
 
     // ----------------------------------------------------
-    // 3. Search customers by discount (if matched)
+    // 3. Search customers by discounts
     // ----------------------------------------------------
     let discountCustomerMatches: any[] = [];
 
     if (discountIds.length > 0) {
       const { data, error } = await supabase
         .from("customers")
-        .select("id, name, phone, email, discount_id")
+        .select(`
+          id,
+          name,
+          phone,
+          email,
+          discount_id,
+          is_blacklisted,
+          blacklist_reason,
+          blacklist_start,
+          blacklist_end
+        `)
         .in("discount_id", discountIds);
 
       if (error) {

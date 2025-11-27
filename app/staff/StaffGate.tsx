@@ -1,4 +1,4 @@
-//  app/staff/StaffGate.tsx
+//app/staff/StaffGate.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,12 +7,38 @@ export default function StaffGate({ children }: { children: React.ReactNode }) {
   const [allowed, setAllowed] = useState(false);
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState("");
+  const [checkingSession, setCheckingSession] = useState(true);
 
+  // -----------------------------------------------------
+  // 1. AUTO-ALLOW LOGGED IN STAFF (ANY ROLE)
+  // -----------------------------------------------------
   useEffect(() => {
-    const granted = localStorage.getItem("staff_access_granted");
-    if (granted === "true") setAllowed(true);
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/auth/session", { cache: "no-store" });
+        const json = await res.json();
+
+        if (json?.staff) {
+          // Logged in → automatically allowed
+          setAllowed(true);
+        } else {
+          // Not logged in → fall back to password system
+          const granted = localStorage.getItem("staff_access_granted");
+          if (granted === "true") setAllowed(true);
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
+      } finally {
+        setCheckingSession(false);
+      }
+    }
+
+    checkSession();
   }, []);
 
+  // -----------------------------------------------------
+  // 2. PASSWORD FORM (only for users NOT logged in)
+  // -----------------------------------------------------
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -24,8 +50,22 @@ export default function StaffGate({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // -----------------------------------------------------
+  // 3. HANDLE STATES
+  // -----------------------------------------------------
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-50 p-6">
+        <div className="text-slate-300 text-lg">Checking access…</div>
+      </div>
+    );
+  }
+
   if (allowed) return <>{children}</>;
 
+  // -----------------------------------------------------
+  // 4. PASSWORD SCREEN FOR NON-LOGGED-IN USERS
+  // -----------------------------------------------------
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-50 p-6">
       <form

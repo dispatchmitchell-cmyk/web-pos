@@ -1,4 +1,4 @@
-//  app/categories/page.tsx
+// app/categories/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -35,10 +35,10 @@ const COLOR_OPTIONS = [
 
 // Emoji palette
 const EMOJI_OPTIONS = [
-  "🍹", "🍺", "🍷", "🥃", "🍾", "🍸", "🥂",
-  "🍔", "🍕", "🌮", "🍟",
-  "🥤", "🧃",
-  "⭐", "🚀",
+  "🍹","🍺","🍷","🥃","🍾","🍸","🥂",
+  "🍔","🍕","🌮","🍟",
+  "🥤","🧃",
+  "⭐","🚀",
 ];
 
 export default function CategoriesPage() {
@@ -48,7 +48,6 @@ export default function CategoriesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
 
-  // Form fields
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [displayOrder, setDisplayOrder] = useState("");
@@ -56,7 +55,6 @@ export default function CategoriesPage() {
   const [color, setColor] = useState("fuchsia");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // LOAD CATEGORIES (via API)
   const loadCategories = async () => {
     const res = await fetch("/api/categories");
     const data = await res.json();
@@ -67,7 +65,6 @@ export default function CategoriesPage() {
     loadCategories();
   }, []);
 
-  // OPEN MODAL
   const openModal = (cat?: Category) => {
     if (cat) {
       setEditing(cat);
@@ -88,12 +85,8 @@ export default function CategoriesPage() {
     setShowModal(true);
   };
 
-  // SAVE CATEGORY (via API)
   const saveCategory = async () => {
-    if (!name.trim()) {
-      alert("Name is required.");
-      return;
-    }
+    if (!name.trim()) return alert("Name is required.");
 
     const payload = {
       id: editing?.id,
@@ -116,20 +109,16 @@ export default function CategoriesPage() {
     loadCategories();
   };
 
-  // DELETE CATEGORY (via API)
   const deleteCategory = async (id: number) => {
     if (!confirm("Delete this category?")) return;
-
     await fetch("/api/categories", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-
     loadCategories();
   };
 
-  // FILTERED LIST
   const filtered = categories.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -143,12 +132,19 @@ export default function CategoriesPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 pt-24 px-8">
+
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold">Categories</h2>
+
+        {/* ACCENT BUTTON */}
         <button
           onClick={() => openModal()}
-          className="bg-fuchsia-600 hover:bg-fuchsia-500 px-4 py-2 rounded-lg font-medium"
+          className="
+            px-4 py-2 rounded-lg font-medium
+            bg-[color:var(--accent)]
+            hover:bg-[color:var(--accent-hover)]
+          "
         >
           + Add Category
         </button>
@@ -178,10 +174,7 @@ export default function CategoriesPage() {
 
           <tbody>
             {filtered.map((cat) => (
-              <tr
-                key={cat.id}
-                className="border-b border-slate-800 hover:bg-slate-800"
-              >
+              <tr key={cat.id} className="border-b border-slate-800 hover:bg-slate-800">
                 <td className="p-3">{cat.display_order ?? "-"}</td>
 
                 <td className="p-3">
@@ -191,15 +184,11 @@ export default function CategoriesPage() {
                   </div>
                 </td>
 
-                <td className="p-3 text-slate-300">
-                  {cat.description || "-"}
-                </td>
+                <td className="p-3 text-slate-300">{cat.description || "-"}</td>
 
                 <td className="p-3">
                   <span
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getColorClass(
-                      cat.color
-                    )}`}
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getColorClass(cat.color)}`}
                   >
                     {cat.color || "default"}
                   </span>
@@ -212,6 +201,7 @@ export default function CategoriesPage() {
                   >
                     Edit
                   </button>
+
                   <button
                     onClick={() => deleteCategory(cat.id)}
                     className="text-red-400 hover:text-red-300"
@@ -224,10 +214,7 @@ export default function CategoriesPage() {
 
             {filtered.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="p-6 text-center text-slate-500 italic"
-                >
+                <td colSpan={5} className="p-6 text-center text-slate-500 italic">
                   No categories found.
                 </td>
               </tr>
@@ -257,9 +244,7 @@ export default function CategoriesPage() {
 
               {/* DESCRIPTION */}
               <div>
-                <label className="block text-sm text-slate-300 mb-1">
-                  Description
-                </label>
+                <label className="block text-sm text-slate-300 mb-1">Description</label>
                 <textarea
                   className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
                   rows={2}
@@ -284,18 +269,14 @@ export default function CategoriesPage() {
 
                 {/* ICON PICKER */}
                 <div className="flex-1">
-                  <label className="block text-sm text-slate-300 mb-1">
-                    Icon
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowEmojiPicker((p) => !p)}
-                      className="px-3 py-2 bg-slate-800 border border-slate-700 rounded text-2xl"
-                    >
-                      {icon || "😀"}
-                    </button>
-                  </div>
+                  <label className="block text-sm text-slate-300 mb-1">Icon</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker((p) => !p)}
+                    className="px-3 py-2 bg-slate-800 border border-slate-700 rounded text-2xl"
+                  >
+                    {icon || "😀"}
+                  </button>
 
                   {showEmojiPicker && (
                     <div className="mt-2 p-2 bg-slate-800 border border-slate-700 rounded grid grid-cols-8 gap-2">
@@ -319,9 +300,7 @@ export default function CategoriesPage() {
 
               {/* COLOR */}
               <div>
-                <label className="block text-sm text-slate-300 mb-1">
-                  Color
-                </label>
+                <label className="block text-sm text-slate-300 mb-1">Color</label>
 
                 <div className="flex items-center gap-3">
                   <select
@@ -337,9 +316,7 @@ export default function CategoriesPage() {
                   </select>
 
                   <span
-                    className={`inline-block w-8 h-8 rounded-full border border-slate-700 ${getColorClass(
-                      color
-                    )}`}
+                    className={`inline-block w-8 h-8 rounded-full border border-slate-700 ${getColorClass(color)}`}
                   />
                 </div>
               </div>

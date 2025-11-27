@@ -17,20 +17,9 @@ type Staff = {
 
 type PaymentSummary = {
   staff_id: number;
-  period: {
-    start: string;
-    end: string;
-  };
-  hours: {
-    total: number;
-    hourly_rate: number;
-    hourly_pay: number;
-  };
-  commission: {
-    rate: number;
-    profit: number;
-    value: number;
-  };
+  period: { start: string; end: string };
+  hours: { total: number; hourly_rate: number; hourly_pay: number };
+  commission: { rate: number; profit: number; value: number };
   total_pay: number;
 };
 
@@ -51,7 +40,6 @@ type PaymentHistoryRecord = {
 
 export default function PaymentsPage() {
   const [session, setSession] = useState<any>(null);
-
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
 
@@ -81,14 +69,12 @@ export default function PaymentsPage() {
     const role = session.role.toLowerCase();
     const isPrivileged = ["admin", "owner", "manager"].includes(role);
 
-    // NORMAL STAFF — can only pay themselves
     if (!isPrivileged) {
       setStaffList([{ id: session.id, name: session.name, role: session.role }]);
       setSelectedStaffId(session.id);
       return;
     }
 
-    // ADMINS / OWNER / MANAGER — full list
     const res = await fetch("/api/staff");
     const json = await res.json();
     setStaffList(json.staff || []);
@@ -123,10 +109,8 @@ export default function PaymentsPage() {
     if (!selectedStaffId) return;
 
     setLoadingHistory(true);
-
     const res = await fetch(`/api/payments/history?staff_id=${selectedStaffId}`);
     const json = await res.json();
-
     setHistory(json.history || []);
     setLoadingHistory(false);
   };
@@ -141,18 +125,12 @@ export default function PaymentsPage() {
       staff_id: summary.staff_id,
       period_start: summary.period.start,
       period_end: summary.period.end,
-
-      // HOURS
       hours: summary.hours.total,
       hourly_rate: summary.hours.hourly_rate,
       hourly_pay: summary.hours.hourly_pay,
-
-      // COMMISSION
       commission_rate: summary.commission.rate,
       commission_profit: summary.commission.profit,
       commission_value: summary.commission.value,
-
-      // TOTAL
       total_pay: summary.total_pay,
     };
 
@@ -205,16 +183,18 @@ export default function PaymentsPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 pt-24 px-8">
-      <h1 className="text-3xl font-bold mb-6">Payments</h1>
+      <h1 className="text-3xl font-bold mb-8 text-white">Payments</h1>
 
       <PaymentHeaderStats session={session} />
 
       {/* STAFF SELECTOR */}
-      <StaffSelector
-        session={session}
-        selectedStaffId={selectedStaffId}
-        onSelect={setSelectedStaffId}
-      />
+      <div className="mb-6">
+        <StaffSelector
+          session={session}
+          selectedStaffId={selectedStaffId}
+          onSelect={setSelectedStaffId}
+        />
+      </div>
 
       {/* SUMMARY SECTION */}
       {loadingSummary ? (
@@ -226,7 +206,10 @@ export default function PaymentsPage() {
           {isPrivileged && (
             <button
               onClick={() => setConfirmOpen(true)}
-              className="mt-6 bg-fuchsia-600 hover:bg-fuchsia-500 px-6 py-3 rounded-lg font-semibold"
+              className="mt-6 px-6 py-3 rounded-lg font-semibold
+                bg-[color:var(--accent)]
+                hover:bg-[color:var(--accent-hover)]
+              "
             >
               Confirm Payment
             </button>
@@ -239,8 +222,7 @@ export default function PaymentsPage() {
       )}
 
       {/* HISTORY */}
-      <h2 className="text-2xl font-bold mb-4">Payment History</h2>
-
+      <h2 className="text-2xl font-bold mb-4 text-white">Payment History</h2>
       <PaymentHistoryTable records={history} loading={loadingHistory} />
 
       {/* CONFIRM MODAL */}

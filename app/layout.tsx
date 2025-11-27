@@ -5,10 +5,8 @@ import "./globals.css";
 import NavBar from "./components/NavBar";
 import { ThemeProvider } from "./theme-provider";
 import { getSession } from "@/lib/auth";
+import { createClient } from "@supabase/supabase-js";
 
-// -------------------------------
-// FONTS
-// -------------------------------
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -18,60 +16,39 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// -------------------------------
-// METADATA
-// -------------------------------
 export const metadata: Metadata = {
   title: "Galaxy Nightclub POS",
   description: "POS system for Galaxy Nightclub",
 };
 
 // -------------------------------
-// SAFE BASE URL (LOCAL + VERCEL)
-// -------------------------------
-function getBaseURL() {
-  // If NEXT_PUBLIC_BASE_URL exists → always preferred
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    return process.env.NEXT_PUBLIC_BASE_URL;
-  }
-
-  // If deployed on Vercel
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
-  // Local fallback
-  return "http://localhost:3000";
-}
-
-// -------------------------------
-// LOAD BUSINESS SETTINGS
+// DIRECT SUPABASE SERVER QUERY
 // -------------------------------
 async function loadBusinessSettings() {
-  const base = getBaseURL();
+  const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_KEY!,
+    { auth: { persistSession: false } }
+  );
 
-  const res = await fetch(`${base}/api/settings/business`, {
-    cache: "no-store",
-  });
+  const { data, error } = await supabase
+    .from("business_settings")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
 
-  if (!res.ok) {
-    console.error("Failed to load business settings:", await res.text());
+  if (error) {
+    console.error("Failed to load business settings:", error);
     return {};
   }
 
-  const json = await res.json();
-  return json.settings || {};
+  return data || {};
 }
 
 // -------------------------------
 // ROOT LAYOUT
 // -------------------------------
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // Load session
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
 
   const navSession = session?.staff
@@ -84,13 +61,12 @@ export default async function RootLayout({
       }
     : null;
 
-  // Load business settings
+  // DIRECTLY LOAD SETTINGS FROM SUPABASE (NOT OWN API)
   const settings = await loadBusinessSettings();
 
   const businessName = settings.business_name || "My Business";
   const businessLogo = settings.business_logo_url || "/logo.png";
   const themeColor = settings.theme_color || "#d946ef";
-
   const logoWidth = settings.logo_width ?? 60;
   const logoHeight = settings.logo_height ?? 60;
 

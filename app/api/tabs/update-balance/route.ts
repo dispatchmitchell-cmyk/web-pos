@@ -1,4 +1,4 @@
-// app/api/tabs/update-balance/route.ts
+// FILE: app/api/tabs/update-balance/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -9,7 +9,18 @@ const supabase = createClient(
 );
 
 export async function PUT(req: Request) {
-  const { tabId, newAmount } = await req.json();
+  const body = await req.json();
+
+  // Accept both naming styles from frontend
+  const tabId = body.tab_id ?? body.tabId;
+  const newAmount = body.new_amount ?? body.newAmount;
+
+  if (!tabId || newAmount === undefined) {
+    return NextResponse.json(
+      { error: "Missing tab_id or new_amount" },
+      { status: 400 }
+    );
+  }
 
   const { error } = await supabase
     .from("tabs")

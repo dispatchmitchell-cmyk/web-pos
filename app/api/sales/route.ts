@@ -29,9 +29,74 @@ export async function POST(req: Request) {
       );
     }
 
-    // ----------------------------------------
+    // ------------------------------------------------------------------------------
+    // 0. TAB PAYMENT HANDLING ("tab:ID" format)
+    // ------------------------------------------------------------------------------
+    let usedTabId: number | null = null;
+
+    if (
+      payment_method &&
+      payment_method.startsWith("tab:")
+    ) {
+      // extract numeric ID → "tab:6" → 6
+      const tabId = Number(payment_method.replace("tab:", "").trim());
+
+      if (isNaN(tabId)) {
+        return NextResponse.json(
+          { error: "Invalid tab format." },
+          { status: 400 }
+        );
+      }
+
+      const { data: tab, error: tabError } = await supabase
+        .from("tabs")
+        .select("*")
+        .eq("id", tabId)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (tabError) {
+        return NextResponse.json(
+          { error: "Tab lookup failure: " + tabError.message },
+          { status: 500 }
+        );
+      }
+
+      if (!tab) {
+        return NextResponse.json(
+          { error: `Tab not found: tab:${tabId}` },
+          { status: 400 }
+        );
+      }
+
+      if (tab.amount < final_total) {
+        return NextResponse.json(
+          { error: "Insufficient funds on tab." },
+          { status: 400 }
+        );
+      }
+
+      // Perform deduction
+      const newAmount = tab.amount - final_total;
+
+      const { error: updateError } = await supabase
+        .from("tabs")
+        .update({ amount: newAmount })
+        .eq("id", tabId);
+
+      if (updateError) {
+        return NextResponse.json(
+          { error: "Failed to update tab balance: " + updateError.message },
+          { status: 500 }
+        );
+      }
+
+      usedTabId = tabId;
+    }
+
+    // ------------------------------------------------------------------------------
     // 1. CREATE SALE
-    // ----------------------------------------
+    // ------------------------------------------------------------------------------
     const { data: sale, error: saleError } = await supabase
       .from("sales")
       .insert([
@@ -41,7 +106,8 @@ export async function POST(req: Request) {
           original_total,
           final_total,
           discount_id: discount_id || null,
-          payment_method,
+          payment_method, // still store original field (Cash/Card/tab:X)
+          tab_id: usedTabId,
           voided: false,
         },
       ])
@@ -57,10 +123,9 @@ export async function POST(req: Request) {
 
     const saleId = sale.id;
 
-    // ----------------------------------------
-    // 2. INSERT SALE ITEMS
-    // (STOCK WILL BE UPDATED BY DB TRIGGER)
-    // ----------------------------------------
+    // ------------------------------------------------------------------------------
+    // 2. INSERT SALE ITEMS (stock updated via trigger)
+    // ------------------------------------------------------------------------------
     const saleItemsPayload = cart.map((item: any) => ({
       sale_id: saleId,
       item_id: item.id,
@@ -81,9 +146,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // ----------------------------------------
+    // ------------------------------------------------------------------------------
     // SUCCESS
-    // ----------------------------------------
+    // ------------------------------------------------------------------------------
     return NextResponse.json(
       {
         success: true,

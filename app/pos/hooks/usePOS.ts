@@ -56,7 +56,7 @@ export default function usePOS({ staffId }: UsePOSArgs) {
   // -------------------------------------------------------
   const [items, setItems] = useState<Item[]>([]);
   const [tabs, setTabs] = useState<Tab[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -221,8 +221,7 @@ export default function usePOS({ staffId }: UsePOSArgs) {
   };
 
   // -------------------------------------------------------
-  // COMPLETE SALE
-  // NOW SUPPORTS TAB PAYMENT
+  // COMPLETE SALE (including TAB PAYMENT FIX)
   // -------------------------------------------------------
   const completeSale = async () => {
     if (isBlacklisted) {
@@ -230,7 +229,15 @@ export default function usePOS({ staffId }: UsePOSArgs) {
       return;
     }
 
-    const selectedTab = tabs.find(t => t.name === paymentMethod);
+    // ---------------------------------------------------
+    // FIXED TAB DETECTION (matches "tab:ID")
+    // ---------------------------------------------------
+    let selectedTab: Tab | null = null;
+
+    if (paymentMethod.startsWith("tab:")) {
+      const tabId = Number(paymentMethod.split(":")[1]);
+      selectedTab = tabs.find((t) => t.id === tabId) || null;
+    }
 
     // -----------------------------
     // TAB PAYMENT LOGIC

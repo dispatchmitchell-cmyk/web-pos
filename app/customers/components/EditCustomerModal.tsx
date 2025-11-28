@@ -123,7 +123,7 @@ export default function EditCustomerModal({
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-slate-900 border border-slate-700 p-6 rounded-xl w-96 text-slate-100 shadow-xl">
-        <h2 className="text-2xl font-bold text-fuchsia-500 mb-4">
+        <h2 className="text-2xl font-bold text-white mb-4">
           {isEdit ? "Edit Customer" : "Add Customer"}
         </h2>
 
@@ -185,7 +185,7 @@ export default function EditCustomerModal({
           <button
             onClick={save}
             disabled={saving}
-            className="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 rounded text-white disabled:opacity-50"
+            className="px-4 py-2 bg-[color:var(--accent)] hover:[color:var(--accent-hover)] rounded text-white disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}
           </button>

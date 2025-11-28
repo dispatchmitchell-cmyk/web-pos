@@ -1,4 +1,4 @@
-// app/items/page.tsx
+// FILE: app/items/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,9 +7,9 @@ type Item = {
   id: number;
   name: string;
   price: number;
+  cost_price: number;
   stock: number;
   category: string;
-  barcode: string | null;
 };
 
 export default function ItemsPage() {
@@ -19,11 +19,12 @@ export default function ItemsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Item | null>(null);
 
+  // Form fields
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [costPrice, setCostPrice] = useState("");
   const [stock, setStock] = useState("");
   const [category, setCategory] = useState("");
-  const [barcode, setBarcode] = useState("");
 
   // LOAD ITEMS
   async function loadItems() {
@@ -42,16 +43,16 @@ export default function ItemsPage() {
       setEditing(item);
       setName(item.name);
       setPrice(String(item.price));
+      setCostPrice(String(item.cost_price ?? 0));
       setStock(String(item.stock));
       setCategory(item.category);
-      setBarcode(item.barcode || "");
     } else {
       setEditing(null);
       setName("");
       setPrice("");
+      setCostPrice("");
       setStock("");
       setCategory("");
-      setBarcode("");
     }
 
     setShowModal(true);
@@ -59,18 +60,15 @@ export default function ItemsPage() {
 
   // SAVE ITEM
   const saveItem = async () => {
-    if (!name.trim()) {
-      alert("Name is required.");
-      return;
-    }
+    if (!name.trim()) return alert("Name is required.");
 
     const payload = {
       id: editing?.id,
       name,
       price: Number(price || 0),
+      cost_price: Number(costPrice || 0),
       stock: Number(stock || 0),
       category,
-      barcode: barcode || null,
     };
 
     const method = editing ? "PUT" : "POST";
@@ -85,7 +83,7 @@ export default function ItemsPage() {
     loadItems();
   };
 
-  // DELETE ITEM
+  // DELETE
   const deleteItem = async (id: number) => {
     if (!confirm("Delete this item?")) return;
 
@@ -98,11 +96,9 @@ export default function ItemsPage() {
     loadItems();
   };
 
-  // FILTERED LIST
-  const filtered = items.filter(
-    (i) =>
-      i.name.toLowerCase().includes(search.toLowerCase()) ||
-      (i.barcode || "").includes(search)
+  // FILTER
+  const filtered = items.filter((i) =>
+    i.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -111,7 +107,6 @@ export default function ItemsPage() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold">Items</h2>
 
-        {/* ACCENT BUTTON */}
         <button
           onClick={() => openModal()}
           className="
@@ -140,9 +135,9 @@ export default function ItemsPage() {
             <tr>
               <th className="p-3 text-left">Name</th>
               <th className="p-3 text-left">Price</th>
+              <th className="p-3 text-left">Cost Price</th>
               <th className="p-3 text-left">Stock</th>
               <th className="p-3 text-left">Category</th>
-              <th className="p-3 text-left">Barcode</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -154,10 +149,10 @@ export default function ItemsPage() {
                 className="border-b border-slate-800 hover:bg-slate-800"
               >
                 <td className="p-3">{i.name}</td>
-                <td className="p-3">${i.price}</td>
+                <td className="p-3">${i.price.toLocaleString()}</td>
+                <td className="p-3">${i.cost_price?.toLocaleString() ?? "0"}</td>
                 <td className="p-3">{i.stock}</td>
                 <td className="p-3">{i.category}</td>
-                <td className="p-3">{i.barcode || "-"}</td>
 
                 <td className="p-3 text-right">
                   <button
@@ -179,10 +174,7 @@ export default function ItemsPage() {
 
             {filtered.length === 0 && (
               <tr>
-                <td
-                  colSpan={6}
-                  className="p-6 text-center text-slate-500 italic"
-                >
+                <td colSpan={6} className="p-6 text-center text-slate-500 italic">
                   No items found.
                 </td>
               </tr>
@@ -211,9 +203,7 @@ export default function ItemsPage() {
 
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="block text-sm text-slate-300 mb-1">
-                    Price
-                  </label>
+                  <label className="block text-sm text-slate-300 mb-1">Price</label>
                   <input
                     type="number"
                     className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
@@ -224,8 +214,20 @@ export default function ItemsPage() {
 
                 <div className="flex-1">
                   <label className="block text-sm text-slate-300 mb-1">
-                    Stock
+                    Cost Price
                   </label>
+                  <input
+                    type="number"
+                    className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
+                    value={costPrice}
+                    onChange={(e) => setCostPrice(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm text-slate-300 mb-1">Stock</label>
                   <input
                     type="number"
                     className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
@@ -233,28 +235,17 @@ export default function ItemsPage() {
                     onChange={(e) => setStock(e.target.value)}
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm text-slate-300 mb-1">
-                  Category
-                </label>
-                <input
-                  className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-slate-300 mb-1">
-                  Barcode
-                </label>
-                <input
-                  className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
-                  value={barcode}
-                  onChange={(e) => setBarcode(e.target.value)}
-                />
+                <div className="flex-1">
+                  <label className="block text-sm text-slate-300 mb-1">
+                    Category
+                  </label>
+                  <input
+                    className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-// app/components/NavBar.tsx
+// FILE: app/components/NavBar.tsx
 "use client";
 
 import Link from "next/link";
@@ -40,12 +40,8 @@ export default function NavBar({
 
   const tabs = [
     { name: "POS", href: "/pos" },
-    { name: "Timesheet", href: "/timesheet" },
-    { name: "Customers", href: "/customers" },
-    { name: "Items", href: "/items" },
+    { name: "Customers", href: "/customers" }, // ← moved back here
     { name: "Tabs", href: "/tabs" },
-    { name: "Categories", href: "/categories" },
-    { name: "Discounts", href: "/discounts" },
     { name: "Staff", href: "/staff" },
   ];
 
@@ -74,6 +70,8 @@ export default function NavBar({
 
         {/* NAVIGATION */}
         <div className="flex items-center gap-6">
+
+          {/* STATIC TABS */}
           {tabs.map((tab) => {
             const active = pathname.startsWith(tab.href);
             return (
@@ -90,6 +88,73 @@ export default function NavBar({
               </Link>
             );
           })}
+
+          {/* TIMESHEET DROPDOWN */}
+          <div className="relative group">
+            <button
+              className={`px-3 py-2 text-sm font-medium rounded-md transition ${
+                pathname.startsWith("/timesheet")
+                  ? "bg-slate-700 text-white"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              Timesheet ▾
+            </button>
+
+            <div className="absolute left-0 top-full w-40 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-2 hidden group-hover:block">
+              <Link
+                href="/timesheet"
+                className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+              >
+                Timesheet
+              </Link>
+
+              <Link
+                href="/timesheet/calendar"
+                className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+              >
+                Calendar
+              </Link>
+            </div>
+          </div>
+
+          {/* TOOLS DROPDOWN (UPDATED) */}
+          <div className="relative group">
+            <button
+              className={`px-3 py-2 text-sm font-medium rounded-md transition ${
+                pathname.startsWith("/items") ||
+                pathname.startsWith("/categories") ||
+                pathname.startsWith("/discounts")
+                  ? "bg-slate-700 text-white"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              Tools ▾
+            </button>
+
+            <div className="absolute left-0 top-full w-44 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-2 hidden group-hover:block">
+              <Link
+                href="/items"
+                className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+              >
+                Items
+              </Link>
+
+              <Link
+                href="/categories"
+                className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+              >
+                Categories
+              </Link>
+
+              <Link
+                href="/discounts"
+                className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+              >
+                Discounts
+              </Link>
+            </div>
+          </div>
 
           {/* STAFF MANAGEMENT DROPDOWN */}
           {isManagerOrAbove && (

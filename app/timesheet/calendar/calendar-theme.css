@@ -1,0 +1,46 @@
+/* FILE: app/timesheet/calendar/calendar-theme.css */
+
+/* ----------------------------------------------------
+   React-Day-Picker theming using app accent colour
+----------------------------------------------------- */
+
+.rdp-root,
+.rdp {
+  /* Accent for selected day border + arrows */
+  --rdp-accent-color: var(--accent);
+  --rdp-accent-color-dark: var(--accent);
+
+  /* Background colour used for hover/focus */
+  --rdp-background-color: color-mix(in srgb, var(--accent) 18%, #020617);
+  --rdp-background-color-dark: color-mix(in srgb, var(--accent) 28%, #020617);
+
+  /* Outlines around focused / selected day (the circle) */
+  --rdp-outline: 2px solid var(--accent);
+  --rdp-outline-selected: 3px solid var(--accent);
+
+  /* Selected day text colour */
+  --rdp-selected-color: #ffffff;
+}
+
+/* ---------------------------------------------
+   Navigation arrows — use white instead of blue
+---------------------------------------------- */
+.rdp-nav_button {
+  color: #ffffff !important; /* SVG uses currentColor */
+}
+
+.rdp-nav_button:hover {
+  background-color: color-mix(in srgb, var(--accent) 25%, #020617) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+}
+
+/* ---------------------------------------------
+   Day hover — slightly darker tint for normal days
+   (blocked/noted colours are set inline via modifiersStyles)
+---------------------------------------------- */
+.rdp-day:not([aria-disabled="true"]):hover {
+  background-color: color-mix(in srgb, var(--accent) 15%, #0f172a) !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+}

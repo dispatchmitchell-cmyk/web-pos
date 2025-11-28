@@ -1,13 +1,14 @@
-// app/api/items/route.ts
+// FILE: app/api/items/route.ts
 
 /**
- * ITEMS API — strong typing + safe string handling
+ * ITEMS API — strong typing, safe inputs, cost_price support
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSession } from "@/lib/auth";
 
+// Server-side Supabase client
 function supabaseServer() {
   return createClient(
     process.env.SUPABASE_URL!,
@@ -16,10 +17,11 @@ function supabaseServer() {
   );
 }
 
+// Roles allowed to create/update/delete items
 const PRIVILEGED_ROLES = ["owner", "admin", "manager"];
 
 /**
- * Ensures caller has staff + permitted role
+ * Ensures caller has a privileged staff role
  */
 async function requirePrivilegedRole() {
   const session = await getSession();
@@ -38,19 +40,18 @@ async function requirePrivilegedRole() {
 }
 
 /* -------------------------------------------------------------
-   GET — Public items (NO COST PRICE)
+   GET — Public items (includes cost_price for UI)
 ------------------------------------------------------------- */
 export async function GET() {
   const supabase = supabaseServer();
 
   const { data, error } = await supabase
     .from("items")
-    .select("id, name, price, stock, category, barcode")
+    .select("id, name, price, cost_price, stock, category")
     .order("name");
 
-  if (error) {
+  if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
-  }
 
   return NextResponse.json({ items: data });
 }
@@ -66,17 +67,11 @@ export async function POST(req: Request) {
   const supabase = supabaseServer();
   const body = await req.json();
 
-  const barcode =
-    typeof body.barcode === "string"
-      ? body.barcode.trim() || null
-      : null;
-
   const newItem = {
     name: String(body.name ?? ""),
     price: Number(body.price ?? 0),
     stock: Number(body.stock ?? 0),
     category: String(body.category ?? ""),
-    barcode,
     cost_price:
       body.cost_price !== undefined && body.cost_price !== null
         ? Number(body.cost_price)
@@ -116,20 +111,11 @@ export async function PUT(req: Request) {
   if (body.stock !== undefined) updates.stock = Number(body.stock);
   if (body.category !== undefined) updates.category = String(body.category);
 
-  if (body.barcode !== undefined) {
-    updates.barcode =
-      typeof body.barcode === "string"
-        ? body.barcode.trim() || null
-        : null;
-  }
-
-  // ✅ FINAL FIX — avoid "string | undefined" error
-  if (PRIVILEGED_ROLES.includes(String(guard.role))) {
-    updates.cost_price =
-      body.cost_price !== undefined && body.cost_price !== null
-        ? Number(body.cost_price)
-        : null;
-  }
+  // cost_price (privileged)
+  updates.cost_price =
+    body.cost_price !== undefined && body.cost_price !== null
+      ? Number(body.cost_price)
+      : null;
 
   const { data, error } = await supabase
     .from("items")
@@ -145,7 +131,7 @@ export async function PUT(req: Request) {
 }
 
 /* -------------------------------------------------------------
-   DELETE — Remove item
+   DELETE — Remove item (privileged only)
 ------------------------------------------------------------- */
 export async function DELETE(req: Request) {
   const guard = await requirePrivilegedRole();

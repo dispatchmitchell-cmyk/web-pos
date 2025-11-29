@@ -20,6 +20,7 @@ type PaymentSummary = {
   period: { start: string; end: string };
   hours: { total: number; hourly_rate: number; hourly_pay: number };
   commission: { rate: number; profit: number; value: number };
+  bonus: number; // ADDED
   total_pay: number;
 };
 
@@ -32,6 +33,7 @@ type PaymentHistoryRecord = {
   hours_worked: number;
   hourly_pay: number;
   commission: number;
+  bonus: number; // ADDED
   total_paid: number;
   paid_by: number;
   paid_by_name: string;
@@ -109,8 +111,10 @@ export default function PaymentsPage() {
     if (!selectedStaffId) return;
 
     setLoadingHistory(true);
+
     const res = await fetch(`/api/payments/history?staff_id=${selectedStaffId}`);
     const json = await res.json();
+
     setHistory(json.history || []);
     setLoadingHistory(false);
   };
@@ -131,6 +135,7 @@ export default function PaymentsPage() {
       commission_rate: summary.commission.rate,
       commission_profit: summary.commission.profit,
       commission_value: summary.commission.value,
+      bonus: summary.bonus, // ADDED
       total_pay: summary.total_pay,
     };
 
@@ -216,9 +221,7 @@ export default function PaymentsPage() {
           )}
         </div>
       ) : (
-        <div className="text-slate-500 italic mb-10">
-          No summary available.
-        </div>
+        <div className="text-slate-500 italic mb-10">No summary available.</div>
       )}
 
       {/* HISTORY */}

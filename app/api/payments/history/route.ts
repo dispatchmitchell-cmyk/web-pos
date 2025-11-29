@@ -20,7 +20,6 @@ export async function GET(req: Request) {
     const role = session.staff.role.toLowerCase();
     const isPrivileged = ["admin", "owner", "manager"].includes(role);
 
-    // Parse query params
     const { searchParams } = new URL(req.url);
     const staffId = Number(searchParams.get("staff_id"));
 
@@ -31,12 +30,10 @@ export async function GET(req: Request) {
       );
     }
 
-    // Non-admin cannot view other people's history
     if (!isPrivileged && staffId !== session.staff.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Fetch payment rows
     const { data: payments, error } = await supabase
       .from("payments")
       .select("*")
@@ -52,28 +49,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ history: [] });
     }
 
-    // Collect all staff IDs referenced (staff + paid_by)
     const staffIds = [
       ...new Set([
         ...payments.map((p) => p.staff_id),
-        ...payments.map((p) => p.paid_by)
-      ])
+        ...payments.map((p) => p.paid_by),
+      ]),
     ];
 
-    // Load staff names
-    const { data: staffRows, error: staffErr } = await supabase
+    const { data: staffRows } = await supabase
       .from("staff")
       .select("id, name")
       .in("id", staffIds);
 
-    if (staffErr) {
-      console.error("Staff fetch error:", staffErr);
-    }
-
     const staffMap: Record<number, string> = {};
     staffRows?.forEach((s) => (staffMap[s.id] = s.name));
 
-    // Enrich payment records
     const enriched = payments.map((p) => ({
       id: p.id,
       staff_id: p.staff_id,
@@ -88,18 +78,15 @@ export async function GET(req: Request) {
       hours_worked: Number(p.hours_worked),
       hourly_pay: Number(p.hourly_pay),
       commission: Number(p.commission),
+      bonus: Number(p.bonus || 0), // ADDED
       total_paid: Number(p.total_paid),
 
-      created_at: p.created_at
+      created_at: p.created_at,
     }));
 
     return NextResponse.json({ history: enriched });
-
   } catch (err) {
     console.error("Payment history fatal error:", err);
-    return NextResponse.json(
-      { error: "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

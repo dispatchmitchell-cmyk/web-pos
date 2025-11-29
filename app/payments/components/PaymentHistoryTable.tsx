@@ -1,4 +1,4 @@
-//  app/payments/components/PaymentHistoryTable.tsx
+// app/payments/components/PaymentHistoryTable.tsx
 "use client";
 
 import React from "react";
@@ -14,6 +14,7 @@ export type PaymentRecord = {
   hours_worked: number;
   hourly_pay: number;
   commission: number;
+  bonus: number;
   total_paid: number;
   created_at: string;
 };
@@ -57,6 +58,7 @@ export default function PaymentHistoryTable({
             <th className="p-3 text-left">Hours</th>
             <th className="p-3 text-left">Hourly Pay</th>
             <th className="p-3 text-left">Commission</th>
+            <th className="p-3 text-left">Bonus</th>
             <th className="p-3 text-left">Total Paid</th>
             <th className="p-3 text-left">Paid By</th>
             <th className="p-3 text-left">Paid At</th>
@@ -69,10 +71,8 @@ export default function PaymentHistoryTable({
               key={r.id}
               className="border-b border-slate-800 hover:bg-slate-800/60 transition"
             >
-              {/* Staff Name */}
               <td className="p-3 font-medium">{r.staff_name}</td>
 
-              {/* Pay Period */}
               <td className="p-3 text-sm">
                 <div>
                   <span className="text-slate-300">Start:</span>{" "}
@@ -84,30 +84,26 @@ export default function PaymentHistoryTable({
                 </div>
               </td>
 
-              {/* Hours */}
               <td className="p-3">{r.hours_worked.toFixed(2)}h</td>
 
-              {/* Hourly Pay */}
               <td className="p-3 text-emerald-300">
                 ${r.hourly_pay.toLocaleString()}
               </td>
 
-              {/* Commission */}
               <td className="p-3 text-amber-300">
                 ${r.commission.toLocaleString()}
               </td>
 
-              {/* Total Paid */}
+              <td className="p-3 text-blue-300">
+                ${r.bonus.toLocaleString()}
+              </td>
+
               <td className="p-3 text-fuchsia-400 font-bold">
                 ${r.total_paid.toLocaleString()}
               </td>
 
-              {/* Paid By */}
-              <td className="p-3 text-slate-300">
-                {r.paid_by_name || "Unknown"}
-              </td>
+              <td className="p-3 text-slate-300">{r.paid_by_name}</td>
 
-              {/* Timestamp */}
               <td className="p-3 text-sm text-slate-400">
                 {formatDate(r.created_at)}
               </td>

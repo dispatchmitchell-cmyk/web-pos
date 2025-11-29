@@ -37,7 +37,7 @@ async function requireManagerRole(req: Request) {
     .eq("id", staff.role_id)
     .maybeSingle();
 
-  return role?.permissions_level >= 800;
+  return role?.permissions_level >= 400;
 }
 
 // --- GET ALL TABS ----------------------------------------------------

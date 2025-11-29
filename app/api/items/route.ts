@@ -18,7 +18,7 @@ function supabaseServer() {
 }
 
 // Roles allowed to create/update/delete items
-const PRIVILEGED_ROLES = ["owner", "admin", "manager"];
+const PRIVILEGED_ROLES = ["owner", "admin", "manager", "head_bartender"];
 
 /**
  * Ensures caller has a privileged staff role

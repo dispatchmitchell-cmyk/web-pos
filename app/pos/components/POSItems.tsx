@@ -53,7 +53,7 @@ export default function POSItems({
     <div className="flex-1 pt-24 p-6 overflow-y-auto">
       {/* Category buttons */}
       <div className="flex gap-3 mb-4">
-        {["All", "Food", "Drink", "Alcohol"].map((cat) => (
+        {["All", "Food", "Drink", "Alcohol", "Specials"].map((cat) => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}

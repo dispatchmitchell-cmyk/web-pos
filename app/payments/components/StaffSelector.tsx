@@ -7,6 +7,7 @@ type Staff = {
   id: number;
   name: string;
   role: string;
+  total_pay: number;
 };
 
 export default function StaffSelector({
@@ -21,7 +22,6 @@ export default function StaffSelector({
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Normalize session role + id
   const userRole = session?.role?.toLowerCase?.() || "";
   const userId =
     session?.id || session?.staff_id || session?.staff?.id || null;
@@ -34,12 +34,13 @@ export default function StaffSelector({
 
     setLoading(true);
 
-    // Non-privileged users can only select themselves
+    // Non-privileged users → can only select themselves
     if (!isPrivileged) {
       const self: Staff = {
         id: userId,
         name: session.name,
         role: session.role,
+        total_pay: 0,
       };
       setStaffList([self]);
       onSelect(self.id);
@@ -47,20 +48,33 @@ export default function StaffSelector({
       return;
     }
 
-    // Privileged → load all staff
+    // Privileged → load ONLY unpaid staff
     try {
-      const res = await fetch("/api/staff");
+      console.log("Fetching /api/payments/unpaid-staff…");
+      const res = await fetch("/api/payments/unpaid-staff");
       const json = await res.json();
 
-      const list: Staff[] = json.staff || [];
-      setStaffList(list);
+      console.log("UNPAID STAFF RESPONSE:", json);
 
-      // Auto-select first staff if none selected yet
-      if (!selectedStaffId && list.length > 0) {
-        onSelect(list[0].id);
+      const unpaid: Staff[] = (json.staff || [])
+        .map((raw: any) => ({
+          id: raw.id,
+          name: raw.name,
+          role: raw.role,
+          total_pay: Number(raw.total_pay),
+        }))
+        .filter((s: Staff) => s.total_pay > 0); // 🔥 FIX: typed parameter
+
+      console.log("Filtered unpaid:", unpaid);
+
+      setStaffList(unpaid);
+
+      // Auto-select first unpaid
+      if (!selectedStaffId && unpaid.length > 0) {
+        onSelect(unpaid[0].id);
       }
     } catch (err) {
-      console.error("Failed to load staff:", err);
+      console.error("Failed to load unpaid staff:", err);
     }
 
     setLoading(false);
@@ -78,6 +92,10 @@ export default function StaffSelector({
 
       {loading ? (
         <div className="text-slate-400">Loading...</div>
+      ) : staffList.length === 0 ? (
+        <div className="text-slate-500 italic">
+          No staff members currently owed money.
+        </div>
       ) : (
         <select
           className="bg-slate-800 border border-slate-700 rounded p-3 w-full text-slate-100"
@@ -85,12 +103,12 @@ export default function StaffSelector({
           onChange={(e) => onSelect(Number(e.target.value))}
         >
           <option value="" disabled>
-            Select staff...
+            Select staff…
           </option>
 
           {staffList.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.name} ({s.role})
+              {s.name} ({s.role}) — ${s.total_pay.toFixed(2)}
             </option>
           ))}
         </select>

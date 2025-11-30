@@ -28,13 +28,17 @@ export default function StaffSelector({
 
   const isPrivileged = ["admin", "owner", "manager"].includes(userRole);
 
-  // Load staff based on permissions
+  const formatMoney = (n: number) =>
+    n.toLocaleString("en-AU", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+
   const loadStaff = async () => {
     if (!session || !userId) return;
 
     setLoading(true);
 
-    // Non-privileged users → can only select themselves
     if (!isPrivileged) {
       const self: Staff = {
         id: userId,
@@ -48,13 +52,9 @@ export default function StaffSelector({
       return;
     }
 
-    // Privileged → load ONLY unpaid staff
     try {
-      console.log("Fetching /api/payments/unpaid-staff…");
       const res = await fetch("/api/payments/unpaid-staff");
       const json = await res.json();
-
-      console.log("UNPAID STAFF RESPONSE:", json);
 
       const unpaid: Staff[] = (json.staff || [])
         .map((raw: any) => ({
@@ -63,13 +63,10 @@ export default function StaffSelector({
           role: raw.role,
           total_pay: Number(raw.total_pay),
         }))
-        .filter((s: Staff) => s.total_pay > 0); // 🔥 FIX: typed parameter
-
-      console.log("Filtered unpaid:", unpaid);
+        .filter((s: Staff) => s.total_pay > 0);
 
       setStaffList(unpaid);
 
-      // Auto-select first unpaid
       if (!selectedStaffId && unpaid.length > 0) {
         onSelect(unpaid[0].id);
       }
@@ -108,7 +105,7 @@ export default function StaffSelector({
 
           {staffList.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.name} ({s.role}) — ${s.total_pay.toFixed(2)}
+              {s.name} ({s.role}) — ${formatMoney(s.total_pay)}
             </option>
           ))}
         </select>

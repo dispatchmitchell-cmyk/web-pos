@@ -1,4 +1,4 @@
-// app/payments/components/PaymentSummaryCard.tsx
+//  app/payments/components/PaymentSummaryCard.tsx
 "use client";
 
 import React from "react";
@@ -11,7 +11,7 @@ interface Props {
     commission: { rate: number; profit: number; value: number };
     total_pay: number;
     last_paid?: string | null;
-    bonus?: number;                        // ⚠ Only for display
+    bonus?: number;
   };
 }
 
@@ -25,6 +25,12 @@ export default function PaymentSummaryCard({ summary }: Props) {
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+    });
+
+  const formatMoney = (n: number) =>
+    n.toLocaleString("en-AU", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     });
 
   return (
@@ -51,11 +57,11 @@ export default function PaymentSummaryCard({ summary }: Props) {
         </div>
         <div className="flex justify-between mt-1">
           <span>Hourly Rate:</span>
-          <span>${hours.hourly_rate}</span>
+          <span>${formatMoney(hours.hourly_rate)}</span>
         </div>
         <div className="flex justify-between mt-1">
           <span>Hourly Pay:</span>
-          <span>${hours.hourly_pay}</span>
+          <span>${formatMoney(hours.hourly_pay)}</span>
         </div>
       </div>
 
@@ -72,12 +78,12 @@ export default function PaymentSummaryCard({ summary }: Props) {
 
         <div className="flex justify-between mt-1">
           <span>Profit Generated:</span>
-          <span>${commission.profit.toFixed(2)}</span>
+          <span>${formatMoney(commission.profit)}</span>
         </div>
 
         <div className="flex justify-between mt-1">
           <span>Commission Earned:</span>
-          <span>${commission.value.toFixed(2)}</span>
+          <span>${formatMoney(commission.value)}</span>
         </div>
       </div>
 
@@ -89,7 +95,7 @@ export default function PaymentSummaryCard({ summary }: Props) {
           <div className="mb-6">
             <p className="text-slate-400 uppercase text-xs mb-2">Bonus</p>
             <p className="text-xl font-bold text-fuchsia-400">
-              ${bonus.toFixed(2)}
+              ${formatMoney(bonus)}
             </p>
           </div>
 
@@ -101,7 +107,7 @@ export default function PaymentSummaryCard({ summary }: Props) {
       <div className="mb-4">
         <p className="text-slate-400 uppercase text-xs mb-2">Total Pay</p>
         <p className="text-3xl font-extrabold text-emerald-400">
-          ${total_pay.toFixed(2)}
+          ${formatMoney(total_pay)}
         </p>
       </div>
     </div>

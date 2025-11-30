@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function NavBar({
   session,
@@ -22,9 +22,18 @@ export default function NavBar({
   const pathname = usePathname();
   const router = useRouter();
 
-  const username = session?.username ?? session?.name ?? "User";
-  const roleLevel = Number(session?.permissions_level ?? 0);
-  const role = session?.role?.toLowerCase?.() ?? "";
+  // ✅ SESSION STATE (updates instantly on change)
+  const [username, setUsername] = useState("User");
+  const [role, setRole] = useState("");
+  const [roleLevel, setRoleLevel] = useState(0);
+
+  useEffect(() => {
+    if (session) {
+      setUsername(session.username ?? session.name ?? "User");
+      setRole(session.role?.toLowerCase?.() ?? "");
+      setRoleLevel(Number(session.permissions_level ?? 0));
+    }
+  }, [session]);
 
   const isManagerOrAbove = roleLevel >= 800;
   const isAdmin = role === "admin";
@@ -40,7 +49,7 @@ export default function NavBar({
 
   const tabs = [
     { name: "POS", href: "/pos" },
-    { name: "Customers", href: "/customers" }, // ← moved back here
+    { name: "Customers", href: "/customers" },
     { name: "Tabs", href: "/tabs" },
     { name: "Staff", href: "/staff" },
   ];
@@ -71,7 +80,6 @@ export default function NavBar({
         {/* NAVIGATION */}
         <div className="flex items-center gap-6">
 
-          {/* STATIC TABS */}
           {tabs.map((tab) => {
             const active = pathname.startsWith(tab.href);
             return (
@@ -118,7 +126,7 @@ export default function NavBar({
             </div>
           </div>
 
-          {/* TOOLS DROPDOWN (UPDATED) */}
+          {/* TOOLS DROPDOWN */}
           <div className="relative group">
             <button
               className={`px-3 py-2 text-sm font-medium rounded-md transition ${
@@ -174,49 +182,14 @@ export default function NavBar({
               </button>
 
               <div className="absolute left-0 top-full w-44 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-2 hidden group-hover:block">
-                {isAdminOrOwner && (
+                {(isAdminOrOwner) && (
                   <>
-                    <Link
-                      href="/live"
-                      className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
-                    >
-                      Live
-                    </Link>
-
-                    <Link
-                      href="/sales"
-                      className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
-                    >
-                      Sales
-                    </Link>
-
-                    <Link
-                      href="/settings/commission"
-                      className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
-                    >
-                      Commission
-                    </Link>
-
-                    <Link
-                      href="/payments"
-                      className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
-                    >
-                      Payments
-                    </Link>
-
-                    <Link
-                      href="/reports"
-                      className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
-                    >
-                      Reports
-                    </Link>
-
-                    <Link
-                      href="/settings"
-                      className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
-                    >
-                      Settings
-                    </Link>
+                    <Link href="/live" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">Live</Link>
+                    <Link href="/sales" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">Sales</Link>
+                    <Link href="/settings/commission" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">Commission</Link>
+                    <Link href="/payments" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">Payments</Link>
+                    <Link href="/reports" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">Reports</Link>
+                    <Link href="/settings" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white">Settings</Link>
                   </>
                 )}
               </div>

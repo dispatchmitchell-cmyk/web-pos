@@ -32,8 +32,7 @@ export async function GET(req: Request) {
       : [];
 
     // ----------------------------------------------------
-    // 2. Search customers by name/phone
-    //    (INCLUDES BLACKLIST FIELDS NOW)
+    // 2. Search customers by name/phone/affiliation
     // ----------------------------------------------------
     const { data: basicMatchesRaw, error: custErr1 } = await supabase
       .from("customers")
@@ -41,24 +40,22 @@ export async function GET(req: Request) {
         id,
         name,
         phone,
-        email,
+        affiliation,
         discount_id,
         is_blacklisted,
         blacklist_reason,
         blacklist_start,
         blacklist_end
       `)
-      .or(`name.ilike.%${q}%, phone.ilike.%${q}%`)
+      .or(`name.ilike.%${q}%, phone.ilike.%${q}%, affiliation.ilike.%${q}%`)
       .order("name");
 
     if (custErr1) console.error("Customer basic search error:", custErr1);
 
-    const basicMatches = Array.isArray(basicMatchesRaw)
-      ? basicMatchesRaw
-      : [];
+    const basicMatches = Array.isArray(basicMatchesRaw) ? basicMatchesRaw : [];
 
     // ----------------------------------------------------
-    // 3. Search customers by discounts
+    // 3. Search customers by discount
     // ----------------------------------------------------
     let discountCustomerMatches: any[] = [];
 
@@ -69,7 +66,7 @@ export async function GET(req: Request) {
           id,
           name,
           phone,
-          email,
+          affiliation,
           discount_id,
           is_blacklisted,
           blacklist_reason,
@@ -78,25 +75,18 @@ export async function GET(req: Request) {
         `)
         .in("discount_id", discountIds);
 
-      if (error) {
-        console.error("Customer discount search error:", error);
-      }
+      if (error) console.error("Customer discount search error:", error);
 
       discountCustomerMatches = Array.isArray(data) ? data : [];
     }
 
     // ----------------------------------------------------
-    // 4. Merge results (unique by customer.id)
+    // 4. Merge results
     // ----------------------------------------------------
-    const safeBasic = Array.isArray(basicMatches) ? basicMatches : [];
-    const safeDiscount = Array.isArray(discountCustomerMatches)
-      ? discountCustomerMatches
-      : [];
-
     const seen = new Set();
     const merged: any[] = [];
 
-    for (const c of [...safeBasic, ...safeDiscount]) {
+    for (const c of [...basicMatches, ...discountCustomerMatches]) {
       if (!seen.has(c.id)) {
         seen.add(c.id);
         merged.push(c);

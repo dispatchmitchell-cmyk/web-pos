@@ -9,7 +9,7 @@ const supabase = createClient(
 );
 
 // ========================================================
-// GET — list all customers
+// GET — list customers
 // ========================================================
 export async function GET() {
   const { data, error } = await supabase
@@ -18,7 +18,7 @@ export async function GET() {
       id,
       name,
       phone,
-      email,
+      affiliation,
       discount_id,
       is_blacklisted,
       blacklist_reason,
@@ -45,11 +45,15 @@ export async function POST(req: Request) {
     const newCustomer = {
       name: body.name ?? "",
       phone: body.phone ?? null,
-      email: body.email ?? null,
+      affiliation: body.affiliation ?? null,
       discount_id: body.discount_id ?? null,
 
-      // blacklist fields (optional)
-      is_blacklisted: body.is_blacklisted ?? false,
+      // ALWAYS boolean – never null
+      is_blacklisted:
+        typeof body.is_blacklisted === "boolean"
+          ? body.is_blacklisted
+          : false,
+
       blacklist_reason: body.blacklist_reason ?? null,
       blacklist_start: body.blacklist_start ?? null,
       blacklist_end: body.blacklist_end ?? null,
@@ -90,11 +94,15 @@ export async function PUT(req: Request) {
     const updates = {
       name: body.name ?? "",
       phone: body.phone ?? null,
-      email: body.email ?? null,
+      affiliation: body.affiliation ?? null,
       discount_id: body.discount_id ?? null,
 
-      // blacklist fields
-      is_blacklisted: body.is_blacklisted ?? null,
+      // FIX — cannot be null
+      is_blacklisted:
+        typeof body.is_blacklisted === "boolean"
+          ? body.is_blacklisted
+          : false,
+
       blacklist_reason: body.blacklist_reason ?? null,
       blacklist_start: body.blacklist_start ?? null,
       blacklist_end: body.blacklist_end ?? null,

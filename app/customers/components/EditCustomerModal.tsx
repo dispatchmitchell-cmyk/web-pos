@@ -1,4 +1,4 @@
-//  app/customers/components/EditCustomerModal.tsx
+// app/customers/components/EditCustomerModal.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,7 +7,7 @@ export interface CustomerRecord {
   id: number;
   name: string;
   phone: string | null;
-  email: string | null;
+  affiliation: string | null;
   discount_id: number | null;
 }
 
@@ -30,12 +30,9 @@ export default function EditCustomerModal({
 }: EditCustomerModalProps) {
   const isEdit = !!customer;
 
-  // ---------------------------------------------------------
-  // LOCAL STATE
-  // ---------------------------------------------------------
   const [name, setName] = useState(customer?.name ?? "");
   const [phone, setPhone] = useState(customer?.phone ?? "");
-  const [email, setEmail] = useState(customer?.email ?? "");
+  const [affiliation, setAffiliation] = useState(customer?.affiliation ?? "");
   const [discountId, setDiscountId] = useState<number | null>(
     customer?.discount_id ?? null
   );
@@ -43,12 +40,8 @@ export default function EditCustomerModal({
   const [discounts, setDiscounts] = useState<DiscountOption[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // Who is editing?
   const [callerRole, setCallerRole] = useState<string>("staff");
 
-  // ---------------------------------------------------------
-  // LOAD CALLER (admin & owner can modify discounts)
-  // ---------------------------------------------------------
   useEffect(() => {
     async function loadCaller() {
       const res = await fetch("/api/auth/session", { cache: "no-store" });
@@ -64,9 +57,6 @@ export default function EditCustomerModal({
   const canModifyDiscount =
     callerRole === "admin" || callerRole === "owner";
 
-  // ---------------------------------------------------------
-  // LOAD DISCOUNTS
-  // ---------------------------------------------------------
   useEffect(() => {
     async function load() {
       const res = await fetch("/api/discounts", { cache: "no-store" });
@@ -76,9 +66,6 @@ export default function EditCustomerModal({
     load();
   }, []);
 
-  // ---------------------------------------------------------
-  // SAVE CUSTOMER
-  // ---------------------------------------------------------
   async function save() {
     if (!name.trim()) {
       alert("Customer name is required.");
@@ -91,7 +78,7 @@ export default function EditCustomerModal({
       id: customer?.id,
       name,
       phone,
-      email,
+      affiliation,
     };
 
     if (canModifyDiscount) {
@@ -117,9 +104,6 @@ export default function EditCustomerModal({
     onClose();
   }
 
-  // ---------------------------------------------------------
-  // UI
-  // ---------------------------------------------------------
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-slate-900 border border-slate-700 p-6 rounded-xl w-96 text-slate-100 shadow-xl">
@@ -142,14 +126,14 @@ export default function EditCustomerModal({
             onChange={(e) => setPhone(e.target.value)}
           />
 
+          {/* AFFILIATION (replaces email) */}
           <input
             className="w-full bg-slate-800 border border-slate-700 p-2 rounded"
-            placeholder="Email"
-            value={email ?? ""}
-            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Affiliation"
+            value={affiliation ?? ""}
+            onChange={(e) => setAffiliation(e.target.value)}
           />
 
-          {/* Discount Dropdown — only owner/admin can use */}
           <select
             disabled={!canModifyDiscount}
             className={`w-full bg-slate-800 border border-slate-700 p-2 rounded ${
@@ -172,7 +156,6 @@ export default function EditCustomerModal({
           </select>
         </div>
 
-        {/* ACTIONS */}
         <div className="flex justify-end space-x-3 mt-6">
           <button
             onClick={onClose}

@@ -9,7 +9,7 @@ type Customer = {
   id: number;
   name: string;
   phone: string;
-  email: string | null;
+  affiliation: string | null;
   discount_id: number | null;
   is_blacklisted: boolean;
   blacklist_start: string | null;
@@ -30,24 +30,21 @@ export default function CustomersPage() {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
 
   const [showModal, setShowModal] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editingCustomer, setEditingCustomer] =
+    useState<Customer | null>(null);
 
   const [blacklistModal, setBlacklistModal] = useState(false);
   const [blacklistCustomer, setBlacklistCustomer] =
     useState<Customer | null>(null);
 
-  // -------------------------------------------------------
   // LOAD CUSTOMERS
-  // -------------------------------------------------------
   const loadCustomers = async () => {
     const res = await fetch("/api/customers", { cache: "no-store" });
     const json = await res.json();
     setCustomers(json.customers || []);
   };
 
-  // -------------------------------------------------------
   // LOAD DISCOUNTS
-  // -------------------------------------------------------
   const loadDiscounts = async () => {
     const res = await fetch("/api/discounts", { cache: "no-store" });
     const json = await res.json();
@@ -59,28 +56,25 @@ export default function CustomersPage() {
     loadCustomers();
   }, []);
 
-  // -------------------------------------------------------
   // FILTERED LIST
-  // -------------------------------------------------------
   const filtered = customers.filter((c) => {
     if (!search.trim()) return true;
 
     const t = search.toLowerCase();
     const matchesName = c.name.toLowerCase().includes(t);
     const matchesPhone = (c.phone || "").includes(search);
+    const matchesAffiliation = (c.affiliation || "")
+      .toLowerCase()
+      .includes(t);
 
-    return matchesName || matchesPhone;
+    return matchesName || matchesPhone || matchesAffiliation;
   });
 
-  // -------------------------------------------------------
-  // RENDER
-  // -------------------------------------------------------
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 pt-24 px-8">
       <div className="flex justify-between mb-6">
         <h2 className="text-3xl font-bold">Customers</h2>
 
-        {/* ACCENT BUTTON */}
         <button
           onClick={() => {
             setEditingCustomer(null);
@@ -99,7 +93,7 @@ export default function CustomersPage() {
       <input
         type="text"
         className="w-full mb-6 p-3 bg-slate-900 border border-slate-700 rounded"
-        placeholder="Search..."
+        placeholder="Search by name, phone, or affiliation..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -110,7 +104,7 @@ export default function CustomersPage() {
             <tr>
               <th className="p-3 text-left">Name</th>
               <th className="p-3 text-left">Phone</th>
-              <th className="p-3 text-left">Email</th>
+              <th className="p-3 text-left">Affiliation</th>
               <th className="p-3 text-left">Status</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
@@ -121,11 +115,13 @@ export default function CustomersPage() {
               <tr key={c.id} className="border-b border-slate-800">
                 <td className="p-3">{c.name}</td>
                 <td className="p-3">{c.phone}</td>
-                <td className="p-3">{c.email || "-"}</td>
+                <td className="p-3">{c.affiliation || "-"}</td>
 
                 <td className="p-3">
                   {c.is_blacklisted ? (
-                    <span className="text-red-400 font-bold">BLACKLISTED</span>
+                    <span className="text-red-400 font-bold">
+                      BLACKLISTED
+                    </span>
                   ) : (
                     "-"
                   )}
@@ -183,7 +179,6 @@ export default function CustomersPage() {
         </table>
       </div>
 
-      {/* EDIT MODAL */}
       {showModal && (
         <EditCustomerModal
           customer={editingCustomer}
@@ -192,7 +187,6 @@ export default function CustomersPage() {
         />
       )}
 
-      {/* BLACKLIST MODAL */}
       {blacklistModal && blacklistCustomer && (
         <BlacklistModal
           customer={blacklistCustomer}

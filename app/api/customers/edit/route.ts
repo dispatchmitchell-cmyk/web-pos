@@ -1,5 +1,4 @@
 // app/api/customers/edit/route.ts
-
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -23,7 +22,7 @@ export async function POST(req: Request) {
     const updateData: any = {
       name: body.name ?? "",
       phone: body.phone ?? null,
-      email: body.email ?? null,
+      affiliation: body.affiliation ?? null,
       discount_id: body.discount_id ?? null,
 
       is_blacklisted: body.is_blacklisted ?? false,
@@ -41,18 +40,12 @@ export async function POST(req: Request) {
 
     if (error) {
       console.error("Customer edit error:", error);
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ customer: data });
   } catch (err) {
     console.error("Customer EDIT error:", err);
-    return NextResponse.json(
-      { error: "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

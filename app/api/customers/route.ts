@@ -23,7 +23,8 @@ export async function GET() {
       is_blacklisted,
       blacklist_reason,
       blacklist_start,
-      blacklist_end
+      blacklist_end,
+      vip
     `)
     .order("name");
 
@@ -48,7 +49,6 @@ export async function POST(req: Request) {
       affiliation: body.affiliation ?? null,
       discount_id: body.discount_id ?? null,
 
-      // ALWAYS boolean – never null
       is_blacklisted:
         typeof body.is_blacklisted === "boolean"
           ? body.is_blacklisted
@@ -57,6 +57,11 @@ export async function POST(req: Request) {
       blacklist_reason: body.blacklist_reason ?? null,
       blacklist_start: body.blacklist_start ?? null,
       blacklist_end: body.blacklist_end ?? null,
+
+      vip:
+        typeof body.vip === "boolean"
+          ? body.vip
+          : false, // NEW
     };
 
     const { data, error } = await supabase
@@ -97,7 +102,6 @@ export async function PUT(req: Request) {
       affiliation: body.affiliation ?? null,
       discount_id: body.discount_id ?? null,
 
-      // FIX — cannot be null
       is_blacklisted:
         typeof body.is_blacklisted === "boolean"
           ? body.is_blacklisted
@@ -106,6 +110,11 @@ export async function PUT(req: Request) {
       blacklist_reason: body.blacklist_reason ?? null,
       blacklist_start: body.blacklist_start ?? null,
       blacklist_end: body.blacklist_end ?? null,
+
+      vip:
+        typeof body.vip === "boolean"
+          ? body.vip
+          : false, // NEW
     };
 
     const { data, error } = await supabase

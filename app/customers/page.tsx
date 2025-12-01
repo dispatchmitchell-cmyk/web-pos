@@ -15,6 +15,7 @@ type Customer = {
   blacklist_start: string | null;
   blacklist_end: string | null;
   blacklist_reason: string | null;
+  vip: boolean;
 };
 
 type Discount = {
@@ -56,18 +57,17 @@ export default function CustomersPage() {
     loadCustomers();
   }, []);
 
-  // FILTERED LIST
+  // FILTER
   const filtered = customers.filter((c) => {
     if (!search.trim()) return true;
 
     const t = search.toLowerCase();
-    const matchesName = c.name.toLowerCase().includes(t);
-    const matchesPhone = (c.phone || "").includes(search);
-    const matchesAffiliation = (c.affiliation || "")
-      .toLowerCase()
-      .includes(t);
-
-    return matchesName || matchesPhone || matchesAffiliation;
+    return (
+      c.name.toLowerCase().includes(t) ||
+      (c.phone || "").includes(search) ||
+      (c.affiliation || "").toLowerCase().includes(t) ||
+      (c.vip ? "vip" : "").includes(t)
+    );
   });
 
   return (
@@ -93,7 +93,7 @@ export default function CustomersPage() {
       <input
         type="text"
         className="w-full mb-6 p-3 bg-slate-900 border border-slate-700 rounded"
-        placeholder="Search by name, phone, or affiliation..."
+        placeholder="Search by name, phone, affiliation, or VIP"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -117,14 +117,16 @@ export default function CustomersPage() {
                 <td className="p-3">{c.phone}</td>
                 <td className="p-3">{c.affiliation || "-"}</td>
 
-                <td className="p-3">
-                  {c.is_blacklisted ? (
+                <td className="p-3 space-x-2">
+                  {c.vip && (
+                    <span className="text-yellow-400 font-bold">VIP</span>
+                  )}
+                  {c.is_blacklisted && (
                     <span className="text-red-400 font-bold">
                       BLACKLISTED
                     </span>
-                  ) : (
-                    "-"
                   )}
+                  {!c.vip && !c.is_blacklisted && "-"}
                 </td>
 
                 <td className="p-3 text-right">

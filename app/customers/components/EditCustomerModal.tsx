@@ -9,6 +9,7 @@ export interface CustomerRecord {
   phone: string | null;
   affiliation: string | null;
   discount_id: number | null;
+  vip: boolean;
 }
 
 export interface DiscountOption {
@@ -33,6 +34,8 @@ export default function EditCustomerModal({
   const [name, setName] = useState(customer?.name ?? "");
   const [phone, setPhone] = useState(customer?.phone ?? "");
   const [affiliation, setAffiliation] = useState(customer?.affiliation ?? "");
+  const [vip, setVip] = useState(customer?.vip ?? false);
+
   const [discountId, setDiscountId] = useState<number | null>(
     customer?.discount_id ?? null
   );
@@ -42,6 +45,7 @@ export default function EditCustomerModal({
 
   const [callerRole, setCallerRole] = useState<string>("staff");
 
+  // LOAD CALLER ROLE (for discount access)
   useEffect(() => {
     async function loadCaller() {
       const res = await fetch("/api/auth/session", { cache: "no-store" });
@@ -51,12 +55,14 @@ export default function EditCustomerModal({
         setCallerRole(json.staff.role.toLowerCase());
       }
     }
+
     loadCaller();
   }, []);
 
   const canModifyDiscount =
     callerRole === "admin" || callerRole === "owner";
 
+  // LOAD DISCOUNTS
   useEffect(() => {
     async function load() {
       const res = await fetch("/api/discounts", { cache: "no-store" });
@@ -66,6 +72,7 @@ export default function EditCustomerModal({
     load();
   }, []);
 
+  // SAVE CUSTOMER
   async function save() {
     if (!name.trim()) {
       alert("Customer name is required.");
@@ -79,6 +86,7 @@ export default function EditCustomerModal({
       name,
       phone,
       affiliation,
+      vip,
     };
 
     if (canModifyDiscount) {
@@ -126,7 +134,6 @@ export default function EditCustomerModal({
             onChange={(e) => setPhone(e.target.value)}
           />
 
-          {/* AFFILIATION (replaces email) */}
           <input
             className="w-full bg-slate-800 border border-slate-700 p-2 rounded"
             placeholder="Affiliation"
@@ -134,6 +141,17 @@ export default function EditCustomerModal({
             onChange={(e) => setAffiliation(e.target.value)}
           />
 
+          {/* VIP CHECKBOX */}
+          <label className="flex items-center space-x-2 mt-2">
+            <input
+              type="checkbox"
+              checked={vip}
+              onChange={(e) => setVip(e.target.checked)}
+            />
+            <span className="text-sm">VIP Customer</span>
+          </label>
+
+          {/* DISCOUNT DROPDOWN */}
           <select
             disabled={!canModifyDiscount}
             className={`w-full bg-slate-800 border border-slate-700 p-2 rounded ${

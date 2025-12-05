@@ -17,6 +17,7 @@ export default function TabsPage() {
 
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
+  const [active, setActive] = useState(true); // <-- NEW: Active toggle state
 
   const loadTabs = async () => {
     const res = await fetch("/api/tabs", { cache: "no-store" });
@@ -33,10 +34,12 @@ export default function TabsPage() {
       setEditing(tab);
       setName(tab.name);
       setAmount(String(tab.amount));
+      setActive(tab.active); // <-- NEW: Load active value
     } else {
       setEditing(null);
       setName("");
       setAmount("");
+      setActive(true); // <-- NEW: default
     }
     setShowModal(true);
   };
@@ -46,13 +49,13 @@ export default function TabsPage() {
       id: editing?.id,
       name,
       amount: Number(amount),
-      active: true,
+      active, // <-- NEW: Send active value to API
     };
 
     await fetch("/api/tabs", {
       method: editing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include", // <-- required for manager role
+      credentials: "include",
       body: JSON.stringify(payload),
     });
 
@@ -65,7 +68,7 @@ export default function TabsPage() {
 
     await fetch(`/api/tabs?id=${id}`, {
       method: "DELETE",
-      credentials: "include", // <-- FIX HERE
+      credentials: "include",
     });
 
     loadTabs();
@@ -143,6 +146,7 @@ export default function TabsPage() {
             </h2>
 
             <div className="space-y-3">
+              {/* Name */}
               <input
                 className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
                 placeholder="Tab Name"
@@ -150,6 +154,7 @@ export default function TabsPage() {
                 onChange={(e) => setName(e.target.value)}
               />
 
+              {/* Amount */}
               <input
                 type="number"
                 className="w-full p-2 bg-slate-800 border border-slate-700 rounded"
@@ -157,6 +162,20 @@ export default function TabsPage() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
+
+              {/* Active toggle */}
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-slate-300">Active:</span>
+
+                <select
+                  className="p-2 bg-slate-800 border border-slate-700 rounded"
+                  value={active ? "yes" : "no"}
+                  onChange={(e) => setActive(e.target.value === "yes")}
+                >
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex justify-between mt-6">

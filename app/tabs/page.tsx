@@ -52,6 +52,7 @@ export default function TabsPage() {
     await fetch("/api/tabs", {
       method: editing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include", // <-- required for manager role
       body: JSON.stringify(payload),
     });
 
@@ -62,17 +63,19 @@ export default function TabsPage() {
   const deleteTab = async (id: number) => {
     if (!confirm("Delete this tab?")) return;
 
-    await fetch(`/api/tabs?id=${id}`, { method: "DELETE" });
+    await fetch(`/api/tabs?id=${id}`, {
+      method: "DELETE",
+      credentials: "include", // <-- FIX HERE
+    });
+
     loadTabs();
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 pt-24 px-8">
-
       <div className="flex justify-between mb-6">
         <h2 className="text-3xl font-bold">Tabs</h2>
 
-        {/* ACCENT BUTTON */}
         <button
           onClick={() => openModal()}
           className="
@@ -174,7 +177,6 @@ export default function TabsPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
